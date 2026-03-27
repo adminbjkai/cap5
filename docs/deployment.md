@@ -9,7 +9,7 @@ This repo currently documents one deployment path: the checked-in Docker
 Compose stack. It is the only deployment model described here because it exists
 in the repo, matches the code, and is the path that has been verified.
 
-If you adapt cap4 to another platform, treat the Compose setup, `.env.example`,
+If you adapt cap5 to another platform, treat the Compose setup, `.env.example`,
 and the runtime docs in this repo as the source of truth.
 
 ---
@@ -63,16 +63,16 @@ LOG_LEVEL=info
 
 POSTGRES_USER=app
 POSTGRES_PASSWORD=app
-POSTGRES_DB=cap4
+POSTGRES_DB=cap5
 POSTGRES_PORT=5432
-DATABASE_URL=postgres://app:app@postgres:5432/cap4
+DATABASE_URL=postgres://app:app@postgres:5432/cap5
 
 S3_ENDPOINT=http://minio:9000
 S3_PUBLIC_ENDPOINT=https://your-browser-reachable-s3-origin
 S3_REGION=us-east-1
 S3_ACCESS_KEY=minio
 S3_SECRET_KEY=minio123
-S3_BUCKET=cap4
+S3_BUCKET=cap5
 S3_FORCE_PATH_STYLE=true
 MINIO_ROOT_USER=minio
 MINIO_ROOT_PASSWORD=minio123
@@ -103,8 +103,8 @@ Notes:
 ## First Deploy
 
 ```bash
-git clone https://github.com/adminbjkai/cap4
-cd cap4
+git clone https://github.com/adminbjkai/cap5
+cd cap5
 
 cp .env.example .env
 # edit .env for your environment

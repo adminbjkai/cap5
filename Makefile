@@ -14,8 +14,8 @@ help:
 	@echo ""
 
 # Canonical docker compose project name.
-# Override: `make PROJECT=cap4-staging up`
-PROJECT ?= cap4
+# Override: `make PROJECT=cap5-staging up`
+PROJECT ?= cap5
 
 # Start all services. Migrations run automatically via the 'migrate' service.
 up:

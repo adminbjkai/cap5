@@ -5,7 +5,7 @@ description: "Tables, enums, migrations, and operational notes"
 
 # Database Schema
 
-Current schema reference for cap4, based on `db/migrations/0001_init.sql` through `0006_add_transcript_speaker_labels.sql`.
+Current schema reference for cap5, based on `db/migrations/0001_init.sql` through `0006_add_transcript_speaker_labels.sql`.
 
 ## Overview
 

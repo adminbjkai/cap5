@@ -1,11 +1,11 @@
 ---
 title: "Environment Variables"
-description: "Complete reference for all cap4 environment variables"
+description: "Complete reference for all cap5 environment variables"
 ---
 
 # Environment Variables Reference
 
-Complete reference for all cap4 environment variables.
+Complete reference for all cap5 environment variables.
 
 ---
 
@@ -13,7 +13,7 @@ Complete reference for all cap4 environment variables.
 
 | Variable | Docker full-stack | Local (no Docker) |
 |----------|------------------|-------------------|
-| `DATABASE_URL` | `postgres://app:app@postgres:5432/cap4` | `postgres://app:app@localhost:5432/cap4` |
+| `DATABASE_URL` | `postgres://app:app@postgres:5432/cap5` | `postgres://app:app@localhost:5432/cap5` |
 | `S3_ENDPOINT` | `http://minio:9000` | `http://localhost:9000` |
 | `S3_PUBLIC_ENDPOINT` | `http://localhost:8922` | `http://localhost:9000` |
 | `MEDIA_SERVER_BASE_URL` | `http://media-server:3100` | `http://localhost:3100` |
@@ -40,19 +40,19 @@ See `.env.example` for a ready-to-copy starting point.
 |----------|---------|-------------|
 | `POSTGRES_USER` | — | PostgreSQL superuser name. Used by the `postgres` and `migrate` services. |
 | `POSTGRES_PASSWORD` | — | PostgreSQL superuser password. **No default — must be set.** |
-| `POSTGRES_DB` | `cap4` | Database name to create on first run. |
+| `POSTGRES_DB` | `cap5` | Database name to create on first run. |
 | `POSTGRES_PORT` | `5432` | Host port that PostgreSQL is mapped to. |
 | `DATABASE_URL` | — | Full connection string used by web-api, worker, and the migrate runner. Must match `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`. |
 
 **Docker:**
 ```
-DATABASE_URL=postgres://app:app@postgres:5432/cap4
+DATABASE_URL=postgres://app:app@postgres:5432/cap5
 ```
 The hostname `postgres` is the Docker service name.
 
 **Local:**
 ```
-DATABASE_URL=postgres://app:app@localhost:5432/cap4
+DATABASE_URL=postgres://app:app@localhost:5432/cap5
 ```
 
 **Migrations** run automatically via the `migrate` Docker service on every
@@ -82,7 +82,7 @@ The current repo expects S3-compatible configuration through the `S3_*` variable
 | `S3_REGION` | `us-east-1` | AWS region string (MinIO ignores it but the SDK requires it). |
 | `S3_ACCESS_KEY` | — | MinIO access key. Matches `MINIO_ROOT_USER`. |
 | `S3_SECRET_KEY` | — | MinIO secret key. Matches `MINIO_ROOT_PASSWORD`. |
-| `S3_BUCKET` | `cap4` | S3 bucket name. Created automatically by the `minio-setup` service. |
+| `S3_BUCKET` | `cap5` | S3 bucket name. Created automatically by the `minio-setup` service. |
 | `S3_FORCE_PATH_STYLE` | `true` | Required for MinIO path-style access (e.g. `http://host/bucket/key`). |
 | `MINIO_ROOT_USER` | — | MinIO root username. Must match `S3_ACCESS_KEY`. |
 | `MINIO_ROOT_PASSWORD` | — | MinIO root password. Must match `S3_SECRET_KEY`. |
@@ -108,15 +108,15 @@ into the frontend bundle at build time. These are **only** for the React app.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VITE_S3_PUBLIC_ENDPOINT` | *(unset)* | When unset, the frontend constructs relative paths (`/cap4/...`) which nginx proxies to MinIO — the correct behavior for Docker. Set to `http://localhost:8922` only when running `pnpm dev:web` against Docker infrastructure. |
-| `VITE_S3_BUCKET` | `cap4` | S3 bucket name baked into frontend bundle. Leave unset unless you've changed `S3_BUCKET`. |
+| `VITE_S3_PUBLIC_ENDPOINT` | *(unset)* | When unset, the frontend constructs relative paths (`/cap5/...`) which nginx proxies to MinIO — the correct behavior for Docker. Set to `http://localhost:8922` only when running `pnpm dev:web` against Docker infrastructure. |
+| `VITE_S3_BUCKET` | `cap5` | S3 bucket name baked into frontend bundle. Leave unset unless you've changed `S3_BUCKET`. |
 
 **For Docker builds:** Do **not** set `VITE_S3_PUBLIC_ENDPOINT`. The frontend
 will use relative paths and nginx handles routing to MinIO.
 
 **For `pnpm dev:web` with Docker infra:** Set
 `VITE_S3_PUBLIC_ENDPOINT=http://localhost:8922` in your local `.env`. Without
-this, the Vite proxy routes `/cap4/` to `http://localhost:9000` (which
+this, the Vite proxy routes `/cap5/` to `http://localhost:9000` (which
 won't match Docker's MinIO port mapping).
 
 ---
@@ -192,14 +192,14 @@ LOG_LEVEL=info
 
 POSTGRES_USER=app
 POSTGRES_PASSWORD=app
-POSTGRES_DB=cap4
-DATABASE_URL=postgres://app:app@postgres:5432/cap4
+POSTGRES_DB=cap5
+DATABASE_URL=postgres://app:app@postgres:5432/cap5
 
 S3_ENDPOINT=http://minio:9000
 S3_PUBLIC_ENDPOINT=http://localhost:8922
 S3_ACCESS_KEY=minio
 S3_SECRET_KEY=minio123
-S3_BUCKET=cap4
+S3_BUCKET=cap5
 MINIO_ROOT_USER=minio
 MINIO_ROOT_PASSWORD=minio123
 MINIO_PORT=8922
@@ -220,14 +220,14 @@ LOG_LEVEL=info
 
 POSTGRES_USER=app
 POSTGRES_PASSWORD=app
-POSTGRES_DB=cap4
-DATABASE_URL=postgres://app:app@localhost:5432/cap4
+POSTGRES_DB=cap5
+DATABASE_URL=postgres://app:app@localhost:5432/cap5
 
 S3_ENDPOINT=http://localhost:9000
 S3_PUBLIC_ENDPOINT=http://localhost:9000
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
-S3_BUCKET=cap4
+S3_BUCKET=cap5
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin
 
@@ -247,6 +247,6 @@ Same as Docker full-stack, plus:
 VITE_S3_PUBLIC_ENDPOINT=http://localhost:8922
 ```
 
-This makes the frontend construct absolute MinIO URLs (`http://localhost:8922/cap4/...`)
+This makes the frontend construct absolute MinIO URLs (`http://localhost:8922/cap5/...`)
 instead of relative paths, so playback and asset links work when the app is
 served at `http://localhost:5173` (Vite) rather than `http://localhost:8022` (nginx).

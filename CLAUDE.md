@@ -1,9 +1,9 @@
-# Working Memory — cap4
+# Working Memory — cap5
 
 **Last updated:** 2026-03-23 (Cross-validated review: Claude Opus + Codex + Gemini; all fixes applied)
-**Project:** cap4 — single-tenant video processing platform
-**Source dir:** cap3test (virtiofs mount — cannot rename, this IS cap4)
-**GitHub:** https://github.com/adminbjkai/cap4
+**Project:** cap5 — single-tenant video processing platform
+
+**GitHub:** adminbjkai/cap5
 
 ---
 
@@ -119,7 +119,7 @@ Full-app review completed 2026-03-23 (Claude Opus 4.6 + Codex GPT-5.4, independe
 - **State machine:** Monotonic `processing_phase_rank`, terminal states: `complete`, `failed`, `cancelled`
 - **Webhooks:** inbound progress webhook route exists for signed callbacks; mainline worker flow currently calls media-server synchronously via `POST /process`
 - **AI:** Deepgram (transcription) + Groq (title/summary/chapters)
-- **URL routing:** Frontend uses relative `/cap4/...` paths → nginx proxies to MinIO (Docker); Vite dev server proxies to `localhost:9000` (local dev)
+- **URL routing:** Frontend uses relative `/cap5/...` paths → nginx proxies to MinIO (Docker); Vite dev server proxies to `localhost:9000` (local dev)
 
 ---
 
@@ -137,8 +137,8 @@ Full-app review completed 2026-03-23 (Claude Opus 4.6 + Codex GPT-5.4, independe
 
 | Term | Meaning |
 |------|---------|
-| cap3test | The working source directory (virtiofs mount — IS cap4) |
-| cap4 | The project name |
+| cap3test | Historical working source directory (was the base for cap4, now cap5) |
+| cap5 | The project name |
 | monolith | Was `apps/web-api/src/index.ts` (2007 lines) — now split into route modules ✓ |
 | Phase 1 | API split + GitHub repo creation ✓ |
 | Phase 2 | Player UI (ChapterList, TranscriptParagraph, lg breakpoint) ✓ |

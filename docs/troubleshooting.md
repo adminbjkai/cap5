@@ -1,6 +1,6 @@
 ---
 title: "Troubleshooting"
-description: "Practical fixes for common cap4 runtime and operator issues"
+description: "Practical fixes for common cap5 runtime and operator issues"
 ---
 
 # Troubleshooting Guide
@@ -79,7 +79,7 @@ The usual cause is database connectivity.
 
 ```bash
 docker compose logs web-api
-docker compose exec postgres pg_isready -U app -d cap4
+docker compose exec postgres pg_isready -U app -d cap5
 ```
 
 ### `/ready` returns 503 with `"status": "not_ready"`
@@ -90,7 +90,7 @@ Check:
 
 ```bash
 docker compose logs web-api
-docker compose exec postgres psql -U app -d cap4 -c "SELECT 1"
+docker compose exec postgres psql -U app -d cap5 -c "SELECT 1"
 ```
 
 ---
@@ -218,7 +218,7 @@ ffprobe -v error sample.mp4
 ### Jobs appear stuck in `leased` or `running`
 
 ```bash
-docker compose exec postgres psql -U app -d cap4 -c \
+docker compose exec postgres psql -U app -d cap5 -c \
   "SELECT id, video_id, job_type, status, locked_by, locked_until, updated_at
    FROM job_queue
    WHERE status IN ('leased', 'running')
@@ -235,7 +235,7 @@ docker compose restart worker
 ### Need a quick queue summary
 
 ```bash
-docker compose exec postgres psql -U app -d cap4 -c \
+docker compose exec postgres psql -U app -d cap5 -c \
   "SELECT status, count(*) FROM job_queue GROUP BY status ORDER BY status;"
 ```
 
@@ -255,7 +255,7 @@ The API exposes `last_error` from `job_queue`, which is the primary failure fiel
 
 ```bash
 docker compose logs postgres
-docker compose exec postgres pg_isready -U app -d cap4
+docker compose exec postgres pg_isready -U app -d cap5
 ```
 
 Check that `DATABASE_URL` matches the credentials in `.env`.
@@ -302,7 +302,7 @@ Current behavior:
 If you need to inspect deleted rows directly:
 
 ```bash
-docker compose exec postgres psql -U app -d cap4 -c \
+docker compose exec postgres psql -U app -d cap5 -c \
   "SELECT id, name, deleted_at FROM videos WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC;"
 ```
 
@@ -315,7 +315,7 @@ For a disposable environment only:
 ```bash
 make down
 docker system prune -a
-docker volume rm cap4_postgres_data cap4_minio_data
+docker volume rm cap5_postgres_data cap5_minio_data
 make up
 make smoke
 ```

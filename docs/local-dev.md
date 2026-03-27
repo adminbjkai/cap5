@@ -5,7 +5,7 @@ description: "Docker and no-Docker setup for local development"
 
 # Local Development
 
-Two ways to run cap4 locally:
+Two ways to run cap5 locally:
 
 - **Docker (recommended)** mirrors the checked-in stack most closely.
 - **Local (no Docker)** is useful for faster service-by-service iteration.
@@ -22,8 +22,8 @@ Two ways to run cap4 locally:
 
 ```bash
 # 1. Clone and enter the repo
-git clone https://github.com/adminbjkai/cap4
-cd cap4
+git clone https://github.com/adminbjkai/cap5
+cd cap5
 
 # 2. Create your .env from the example
 cp .env.example .env
@@ -78,7 +78,7 @@ pnpm dev:web
 # The Vite proxy routes:
 #   /api     → http://localhost:3000
 #   /health  → http://localhost:3000
-#   /cap4    → http://localhost:9000  (for local MinIO dev)
+#   /cap5    → http://localhost:9000  (for local MinIO dev)
 #
 # When using Docker infrastructure (MinIO mapped to :8922), add to .env:
 #   VITE_S3_PUBLIC_ENDPOINT=http://localhost:8922
@@ -115,9 +115,9 @@ without Docker rebuild cycles.
 ```bash
 brew install postgresql@16
 brew services start postgresql@16
-createdb cap4
-psql cap4 -c "CREATE USER app WITH PASSWORD 'app';"
-psql cap4 -c "GRANT ALL PRIVILEGES ON DATABASE cap4 TO app;"
+createdb cap5
+psql cap5 -c "CREATE USER app WITH PASSWORD 'app';"
+psql cap5 -c "GRANT ALL PRIVILEGES ON DATABASE cap5 TO app;"
 ```
 
 **PostgreSQL (Ubuntu/Debian):**
@@ -125,7 +125,7 @@ psql cap4 -c "GRANT ALL PRIVILEGES ON DATABASE cap4 TO app;"
 ```bash
 apt-get install postgresql
 sudo -u postgres createuser app --pwprompt   # use "app" as password
-sudo -u postgres createdb cap4 --owner=app
+sudo -u postgres createdb cap5 --owner=app
 ```
 
 **MinIO (macOS):**
@@ -136,8 +136,8 @@ minio server ~/minio-data --address ":9000" --console-address ":9001" &
 # Create bucket
 brew install minio/stable/mc
 mc alias set local http://localhost:9000 minioadmin minioadmin
-mc mb local/cap4
-mc anonymous set public local/cap4
+mc mb local/cap5
+mc anonymous set public local/cap5
 ```
 
 **MinIO (Linux — binary):**
@@ -158,7 +158,7 @@ apt-get install ffmpeg   # Ubuntu/Debian
 ### Apply Migrations (Initial Setup And After Schema Changes)
 
 ```bash
-DATABASE_URL=postgres://app:app@localhost:5432/cap4 pnpm db:migrate
+DATABASE_URL=postgres://app:app@localhost:5432/cap5 pnpm db:migrate
 ```
 
 This uses the repo-native migration runner in `packages/db/scripts/migrate.mjs`.
@@ -175,7 +175,7 @@ Then update `.env` to point to `localhost` instead of Docker service names:
 
 ```bash
 # Override for local (no Docker)
-DATABASE_URL=postgres://app:app@localhost:5432/cap4
+DATABASE_URL=postgres://app:app@localhost:5432/cap5
 S3_ENDPOINT=http://localhost:9000
 S3_PUBLIC_ENDPOINT=http://localhost:9000
 MEDIA_SERVER_BASE_URL=http://localhost:3100
@@ -215,9 +215,9 @@ Understanding where video files are loaded from:
 
 | Runtime                                                               | URL pattern                              | Resolved by                                                |
 | --------------------------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------- |
-| **Docker via nginx**                                                  | `/cap4/videos/.../result.mp4` (relative) | nginx proxies `/cap4/` → MinIO (internal :9000)            |
-| **Docker Vite dev** + `VITE_S3_PUBLIC_ENDPOINT=http://localhost:8922` | `http://localhost:8922/cap4/...`         | Browser → MinIO directly at host port 8922                 |
-| **Local (no Docker) Vite dev**                                        | `/cap4/videos/.../result.mp4` (relative) | Vite dev server proxies `/cap4/` → `http://localhost:9000` |
+| **Docker via nginx**                                                  | `/cap5/videos/.../result.mp4` (relative) | nginx proxies `/cap5/` → MinIO (internal :9000)            |
+| **Docker Vite dev** + `VITE_S3_PUBLIC_ENDPOINT=http://localhost:8922` | `http://localhost:8922/cap5/...`         | Browser → MinIO directly at host port 8922                 |
+| **Local (no Docker) Vite dev**                                        | `/cap5/videos/.../result.mp4` (relative) | Vite dev server proxies `/cap5/` → `http://localhost:9000` |
 
 `buildPublicObjectUrl(key)` in `apps/web/src/lib/format.ts` reads
 `VITE_S3_PUBLIC_ENDPOINT` at build time. If unset, it falls back to a relative
@@ -241,11 +241,11 @@ pnpm --filter @cap/web build
 pnpm --filter @cap/web test:e2e
 
 # API E2E
-DATABASE_URL=postgres://app:app@localhost:5432/cap4 pnpm db:migrate
+DATABASE_URL=postgres://app:app@localhost:5432/cap5 pnpm db:migrate
 S3_ENDPOINT=http://localhost:9000 \
 S3_ACCESS_KEY=minioadmin \
 S3_SECRET_KEY=minioadmin \
-S3_BUCKET=cap4 \
+S3_BUCKET=cap5 \
 pnpm --filter @cap/web-api exec node ./scripts/prepare-minio.mjs
 pnpm --filter @cap/web-api test:e2e
 ```
@@ -261,10 +261,10 @@ Notes:
 
 ```bash
 # Docker
-docker compose exec postgres psql -U app -d cap4
+docker compose exec postgres psql -U app -d cap5
 
 # Local
-psql -U app -d cap4
+psql -U app -d cap5
 ```
 
 Useful queries:
@@ -299,7 +299,7 @@ lsof -i :8922   # MinIO
 ### `relation "..." does not exist` (empty database)
 
 - **Docker:** `make reset-db` — migrations auto-apply on startup
-- **Local:** run `DATABASE_URL=postgres://app:app@localhost:5432/cap4 pnpm db:migrate`
+- **Local:** run `DATABASE_URL=postgres://app:app@localhost:5432/cap5 pnpm db:migrate`
 
 ### Presigned upload fails
 

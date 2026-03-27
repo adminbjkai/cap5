@@ -3,7 +3,7 @@ title: "Architecture"
 description: "System design, state machine, Docker services, and data flow"
 ---
 
-# cap4 Architecture
+# cap5 Architecture
 
 Current system architecture for the repo in this branch. This document follows the code, migrations, and `docker-compose.yml`.
 

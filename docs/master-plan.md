@@ -3,11 +3,11 @@ title: "Master Plan"
 description: "High-level synthesis of the project, its current state, and its history"
 ---
 
-# cap4 — Master Plan
+# cap5 — Master Plan
 
 **Status:** Current-state synthesis for the repo
 **Last reviewed:** 2026-03-24
-**Purpose:** Keep one concise high-level document that explains what cap4 is,
+**Purpose:** Keep one concise high-level document that explains what cap5 is,
 how it got here, and what is currently true.
 
 This document is not a feature backlog. For current technical contracts, use:
@@ -23,7 +23,7 @@ This document is not a feature backlog. For current technical contracts, use:
 
 ## Current State
 
-cap4 is a single-tenant video processing platform with:
+cap5 is a single-tenant video processing platform with:
 
 - React watch app
 - Fastify API
@@ -113,6 +113,7 @@ For the detailed contract, do not rely on this file. Use [architecture.md](archi
 | v2 | `Cap_v2` | Established the PostgreSQL job-queue architecture |
 | v3 | `cap3` | Matured multipart upload and core service split |
 | v4 | `cap3test` | Security hardening and the base for cap4 |
+| v5 | cap5 | Full refactor: clean module structure, Zustand, Zod validation, worker decomposition, UI primitives |
 
 Two historical docs are kept intentionally:
 

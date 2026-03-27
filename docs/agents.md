@@ -1,6 +1,6 @@
 # AI Agent Conventions
 
-How AI agents are used in cap4 development.
+How AI agents are used in cap5 development.
 
 ---
 

@@ -104,7 +104,7 @@ Response shape:
     ],
     "entities": {
       "people": ["Murry"],
-      "organizations": ["Cap4"],
+      "organizations": ["Cap5"],
       "locations": [],
       "dates": []
     },
@@ -475,7 +475,7 @@ Current webhook contract for media-server progress updates handled by `apps/web-
 - Purpose: update `videos.processing_phase` and `processing_progress`
 - Auth: HMAC verification plus timestamp skew validation
 - Rate limit: excluded from the global API limiter
-- Content type: `application/cap4-webhook+json`
+- Content type: `application/cap5-webhook+json`
 - Flow note: this route exists for signed progress updates and is covered by the API contract plus test/debug tooling. The checked-in main worker path still calls media-server `/process` synchronously, and the `apps/media-server` implementation shown in this repo does not itself emit these callbacks during that path.
 
 ### What This Route Does
@@ -492,7 +492,7 @@ When a signed progress update is posted to this route, the API:
 ### Required Headers
 
 ```http
-Content-Type: application/cap4-webhook+json
+Content-Type: application/cap5-webhook+json
 x-cap-timestamp: 1710806400
 x-cap-signature: v1=<hex hmac digest>
 x-cap-delivery-id: 550e8400-e29b-41d4-a716-446655440000
@@ -547,7 +547,7 @@ Fields:
 
 ```bash
 curl -X POST http://localhost:3000/api/webhooks/media-server/progress \
-  -H "Content-Type: application/cap4-webhook+json" \
+  -H "Content-Type: application/cap5-webhook+json" \
   -H "x-cap-timestamp: 1710806400" \
   -H "x-cap-signature: v1=<computed-hmac-digest>" \
   -H "x-cap-delivery-id: 550e8400-e29b-41d4-a716-446655440000" \

@@ -5,7 +5,7 @@ description: "Languages, frameworks, key dependencies, and versions"
 
 # Tech Stack
 
-Languages, frameworks, key dependencies, and versions used in cap4.
+Languages, frameworks, key dependencies, and versions used in cap5.
 
 ---
 

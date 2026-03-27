@@ -1,4 +1,4 @@
-# Contributing to cap4
+# Contributing to cap5
 
 This repository is a pnpm workspace with a React frontend, a Fastify API, a background worker, and a media-server.
 
