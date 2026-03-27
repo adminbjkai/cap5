@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  typecheck:
-    name: Typecheck
+  install:
+    name: Install Dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +24,49 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Cache pnpm store
+        id: cache-pnpm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+            apps/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
       - name: Install dependencies
+        if: steps.cache-pnpm.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+            apps/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
 
       - name: Typecheck all workspaces
         run: pnpm typecheck
@@ -33,6 +74,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: install
     steps:
       - uses: actions/checkout@v4
 
@@ -43,8 +85,18 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+            apps/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
 
       - name: Lint all workspaces
         run: pnpm lint
@@ -52,6 +104,7 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    needs: install
     steps:
       - uses: actions/checkout@v4
 
@@ -62,8 +115,18 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+            apps/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
 
       - name: Run tests
         run: pnpm test
@@ -72,6 +135,7 @@ jobs:
     name: Web E2E
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: install
     steps:
       - uses: actions/checkout@v4
 
@@ -82,8 +146,18 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+            apps/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
 
       - name: Install Playwright browser
         run: pnpm --filter @cap/web exec playwright install --with-deps chromium
@@ -114,9 +188,10 @@ jobs:
     name: API E2E
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: install
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:16
         env:
           POSTGRES_USER: cap4
           POSTGRES_PASSWORD: cap4_test
@@ -150,8 +225,18 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+            apps/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
 
       - name: Start MinIO
         run: |
@@ -203,8 +288,18 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            node_modules
+            packages/*/node_modules
+            apps/*/node_modules
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-
+
 
       - name: Build all workspaces
         run: pnpm build

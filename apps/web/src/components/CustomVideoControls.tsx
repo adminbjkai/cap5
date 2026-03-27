@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject, type TouchEvent } from "react";
+import { formatTimestamp } from "../lib/format";
 
 type ChapterItem = { title: string; seconds: number };
 
@@ -13,17 +14,6 @@ type Props = {
 };
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
-
-function formatTimestamp(secondsInput: number): string {
-  const totalSeconds = Math.max(0, Math.floor(secondsInput));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
 
 export function CustomVideoControls({
   videoRef,
