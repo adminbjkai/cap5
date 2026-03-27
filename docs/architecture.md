@@ -151,6 +151,96 @@ Current checked-in runtime note:
 - `deliver_webhook` is unrelated to the internal media progress route; it sends outbound user webhooks stored in `videos.webhook_url`.
 - Debug-only routes such as `/debug/smoke` exist only in non-production builds and are not part of the production contract.
 
+## Diagrams
+
+### Service Topology
+
+```mermaid
+graph TD
+    Browser -->|":8022"| web-internal["web-internal\n(nginx :8022)"]
+    Browser -->|":8922"| minio["minio\n(:8922 API, :8923 console)"]
+    web-internal -->|static assets| web_dist[(web_dist volume)]
+    web-builder -->|"cp dist/*"| web_dist
+    web-internal -->|proxy /api/| web-api["web-api\n(Fastify :3000)"]
+    web-api --> postgres[("postgres\n(:5432)")]
+    web-api --> minio
+    worker["worker"] --> postgres
+    worker --> minio
+    worker -->|"POST /process"| media-server["media-server\n(:3100)"]
+    media-server --> minio
+    media-server -->|optional progress callback| web-api
+    worker -->|Deepgram API| deepgram((Deepgram))
+    worker -->|Groq API| groq((Groq))
+    migrate["migrate\n(one-shot)"] --> postgres
+    minio-setup["minio-setup\n(one-shot)"] --> minio
+```
+
+### Job State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> queued : enqueue
+    queued --> leased : claimOne (SKIP LOCKED)
+    leased --> running : markRunning
+    running --> succeeded : ack
+    running --> leased : fail (retry budget remaining)
+    running --> dead : fail (budget exhausted or fatal)
+    dead --> queued : enqueueDownstream reset
+    queued --> cancelled : external delete
+    leased --> cancelled : external delete
+    running --> cancelled : external delete
+```
+
+### Upload Sequence
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant A as web-api
+    participant M as MinIO
+    participant W as Worker
+    participant MS as media-server
+    participant DG as Deepgram
+    participant GR as Groq
+
+    B->>A: POST /api/videos (Idempotency-Key)
+    A-->>B: { videoId, uploadId }
+
+    B->>A: POST /api/uploads/signed (Idempotency-Key)
+    A-->>B: { putUrl }
+
+    B->>M: PUT <putUrl> (raw bytes)
+    M-->>B: 200 OK
+
+    B->>A: POST /api/uploads/complete (Idempotency-Key)
+    A->>A: enqueue process_video
+    A-->>B: 200 OK
+
+    W->>A: (polling job_queue via DB)
+    W->>MS: POST /process
+    MS->>M: download raw upload
+    MS->>MS: FFmpeg transcode
+    MS->>M: upload processed MP4 + HLS + thumbnail
+    MS-->>W: { status: complete }
+
+    W->>W: enqueue transcribe_video
+    W->>M: download audio
+    W->>DG: transcribe (diarize=true)
+    DG-->>W: segments + speaker data
+    W->>A: (update transcripts table via DB)
+
+    W->>W: enqueue generate_ai
+    W->>GR: title/summary/chapters/entities
+    GR-->>W: structured JSON
+    W->>A: (update ai_outputs table via DB)
+
+    W->>W: enqueue cleanup_artifacts
+    W->>M: delete temp objects
+
+    B->>A: GET /api/videos/:id/status
+    A-->>B: { phase: complete, transcription, ai, ... }
+```
+
 ## Frontend Serving
 
 The production-style Compose flow does not run Vite as a long-lived container. Instead:

@@ -1,4 +1,17 @@
-.PHONY: up down logs migrate reset-db smoke prune
+.PHONY: up down logs migrate reset-db smoke prune help
+
+# Print all available targets with descriptions.
+help:
+	@echo ""
+	@echo "  make up         - Build and start all Docker services (migrations run automatically)"
+	@echo "  make down       - Stop all services (preserves volumes / data)"
+	@echo "  make logs       - Follow logs for all services"
+	@echo "  make migrate    - Re-run migrations against the running database"
+	@echo "  make reset-db   - Wipe all volumes and restart from scratch"
+	@echo "  make smoke      - Verify /health and /ready endpoints"
+	@echo "  make prune      - Remove containers, volumes, and dangling build cache"
+	@echo "  make help       - Show this help message"
+	@echo ""
 
 # Canonical docker compose project name.
 # Override: `make PROJECT=cap4-staging up`

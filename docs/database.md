@@ -308,29 +308,29 @@ One-to-many by `video_id`:
 
 ## Running Migrations
 
-Apply migrations in lexical order from `db/migrations/`.
+### Canonical runner
 
-### Apply locally (Docker)
+Migrations are managed by the Node.js script at `packages/db/scripts/migrate.mjs`. This is the single source of truth for migration execution. It reads SQL files from `db/migrations/` in lexical order and tracks applied migrations in the `schema_migrations` table, making it safe to re-run.
+
+### Docker (recommended)
+
+The `migrate` Docker Compose service runs this script automatically on every `docker compose up`. You do not need to run migrations manually.
+
+To re-run migrations against an already-running database (e.g., after adding a new migration file):
 
 ```bash
-docker compose up -d postgres
-for f in /migrations/*.sql; do
-  docker compose exec -T postgres psql -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-cap4} -f "$f"
-done
+make migrate
 ```
 
-### Reset and re-apply from scratch
+To reset the database and start from scratch:
 
 ```bash
-docker compose down -v
-docker compose up -d postgres
-for f in /migrations/*.sql; do
-  docker compose exec -T postgres psql -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-cap4} -f "$f"
-done
+make reset-db
 ```
 
-### Verify
+### Verify applied migrations
 
 ```bash
-docker compose exec -T postgres psql -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-cap4} -c "\dt"
+docker compose exec postgres psql -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-cap5} \
+  -c "SELECT version, applied_at FROM schema_migrations ORDER BY version;"
 ```
