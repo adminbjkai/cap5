@@ -2,6 +2,8 @@ import { z } from "zod";
 
 const BaseEnv = z.object({
   NODE_ENV: z.string().default("development"),
+  LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error"]).default("info"),
+  LOG_PRETTY: z.string().optional(),
   DATABASE_URL: z.string().min(1),
   MEDIA_SERVER_WEBHOOK_SECRET: z.string().min(32),
   WEBHOOK_MAX_SKEW_SECONDS: z.coerce.number().int().positive().default(300),
@@ -21,11 +23,52 @@ const BaseEnv = z.object({
   WORKER_MAX_ATTEMPTS: z.coerce.number().int().positive().default(6),
   WORKER_POLL_MS: z.coerce.number().int().positive().default(2000),
   WORKER_HEARTBEAT_MS: z.coerce.number().int().positive().default(15000),
-  WORKER_RECLAIM_MS: z.coerce.number().int().positive().default(10000)
+  WORKER_RECLAIM_MS: z.coerce.number().int().positive().default(10000),
+  // S3 / object storage
+  S3_ENDPOINT: z.string().url().default("http://minio:9000"),
+  S3_PUBLIC_ENDPOINT: z.string().url().default("http://localhost:8922"),
+  S3_REGION: z.string().default("us-east-1"),
+  S3_ACCESS_KEY: z.string().min(1),
+  S3_SECRET_KEY: z.string().min(1),
+  S3_BUCKET: z.string().default("cap4"),
+  S3_FORCE_PATH_STYLE: z.string().default("true"),
 });
 
 export type AppEnv = z.infer<typeof BaseEnv>;
 
 export function getEnv(raw: Record<string, string | undefined> = process.env): AppEnv {
   return BaseEnv.parse(raw);
+}
+
+/**
+ * Parse and validate environment variables. Throws a descriptive error listing
+ * all missing/invalid required variables (rather than a raw Zod message).
+ */
+export function parse(raw: Record<string, string | undefined> = process.env): AppEnv {
+  const result = BaseEnv.safeParse(raw);
+  if (result.success) {
+    return result.data;
+  }
+
+  const missing: string[] = [];
+  const invalid: string[] = [];
+
+  for (const issue of result.error.issues) {
+    const key = issue.path.join(".");
+    if (issue.code === "invalid_type" && issue.received === "undefined") {
+      missing.push(key);
+    } else {
+      invalid.push(`${key}: ${issue.message}`);
+    }
+  }
+
+  const parts: string[] = ["Environment validation failed."];
+  if (missing.length > 0) {
+    parts.push(`Missing required variables: ${missing.join(", ")}.`);
+  }
+  if (invalid.length > 0) {
+    parts.push(`Invalid variables: ${invalid.join("; ")}.`);
+  }
+
+  throw new Error(parts.join(" "));
 }

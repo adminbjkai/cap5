@@ -1,4 +1,9 @@
 #!/bin/sh
+# DEPRECATED — This bash runner is kept for Docker Compose compatibility only.
+# The canonical migration runner is the Node.js script at:
+#   packages/db/scripts/migrate.mjs
+# Use that script for all new workflows (CI, local dev, testing).
+#
 # run-migrations.sh — Applies all pending SQL migrations to the database.
 #
 # Uses a schema_migrations table to track which migrations have been applied,
