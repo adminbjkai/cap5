@@ -18,7 +18,8 @@ import { upsertRecentSession } from "../lib/sessions";
 import { PlayerCard } from "../components/PlayerCard";
 import { TranscriptCard } from "../components/TranscriptCard";
 import { SummaryCard } from "../components/SummaryCard";
-import { ChapterList } from "../components/ChapterList";
+import { SummaryCardCompact } from "../components/SummaryCardCompact";
+import { ChapterListInline } from "../components/ChapterListInline";
 import { buildPublicObjectUrl } from "../lib/format";
 import { NotesPanel } from "./video-page/NotesPanel";
 import { deriveVideoChapters, buildWatchIdempotencyKey } from "./video-page/chapters";
@@ -249,14 +250,12 @@ export function VideoPage() {
     if (tab === "notes") return <NotesPanel videoId={videoId} />;
     if (tab === "summary") {
       return (
-        <SummaryCard
+        <SummaryCardCompact
           aiStatus={status?.aiStatus}
           aiOutput={status?.aiOutput}
           errorMessage={status?.aiErrorMessage}
-          shareableResultUrl={shareableResultUrl}
           chapters={chapters}
           onJumpToSeconds={requestSeek}
-          compact
         />
       );
     }
@@ -389,12 +388,11 @@ export function VideoPage() {
       {chapters.length > 0 && (
         <div className="mt-5">
           <h2 className="text-sm font-semibold mb-2 text-foreground">Chapters</h2>
-          <ChapterList
+          <ChapterListInline
             chapters={chapters}
             currentSeconds={playbackTimeSeconds}
             durationSeconds={_videoDurationSeconds}
             onSeek={requestSeek}
-            inline
           />
         </div>
       )}

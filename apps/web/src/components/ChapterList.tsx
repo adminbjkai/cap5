@@ -6,22 +6,21 @@ type ChapterItem = {
   seconds: number;
 };
 
+type ChapterListProps = {
+  chapters: ChapterItem[];
+  currentSeconds: number;
+  durationSeconds: number;
+  onSeek: (seconds: number) => void;
+  title?: string;
+};
+
 export function ChapterList({
   chapters,
   currentSeconds,
   durationSeconds,
   onSeek,
   title = "Chapters",
-  inline = false
-}: {
-  chapters: ChapterItem[];
-  currentSeconds: number;
-  durationSeconds: number;
-  onSeek: (seconds: number) => void;
-  title?: string;
-  /** When true, renders as a plain flat list without the card wrapper (for use in VideoPage below-the-fold) */
-  inline?: boolean;
-}) {
+}: ChapterListProps) {
   const validChapters = useMemo(() => {
     if (durationSeconds <= 0) return chapters;
     return chapters.filter((c) => c.seconds >= 0 && c.seconds <= durationSeconds);
@@ -41,7 +40,6 @@ export function ChapterList({
   }, [validChapters, currentSeconds]);
 
   if (validChapters.length === 0) {
-    if (inline) return null;
     return (
       <div className="workspace-card h-full">
         <div className="mb-3">
@@ -55,38 +53,6 @@ export function ChapterList({
     );
   }
 
-  /* ── Inline mode: Cap-style clean table ───────────────────────── */
-  if (inline) {
-    return (
-      <div className="divide-y divide-default rounded-xl border">
-        {validChapters.map((chapter, index) => {
-          const isActive = index === activeIndex;
-          return (
-            <button
-              key={`${chapter.title}-${index}-${chapter.seconds}`}
-              type="button"
-              onClick={() => onSeek(chapter.seconds)}
-              className={`w-full flex items-center gap-4 px-4 py-2 text-left transition-colors hover:bg-surface-muted ${
-                isActive ? "bg-surface-muted" : ""
-              }`}
-            >
-              <span className={`font-mono text-[11px] w-10 shrink-0 ${isActive ? "font-semibold text-foreground" : "text-muted"}`}>
-                {formatTimestamp(chapter.seconds)}
-              </span>
-              <span className={`text-[13px] flex-1 leading-snug ${isActive ? "font-medium text-foreground" : "text-secondary"}`}>
-                {chapter.title}
-              </span>
-              {isActive && (
-                <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-blue" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-
-  /* ── Sidebar mode: original card style ────────────────────────── */
   return (
     <div className="workspace-card h-full flex flex-col">
       <div className="mb-3">
@@ -110,12 +76,16 @@ export function ChapterList({
               }`}
             >
               <div className="flex items-start gap-3">
-                <span className="font-mono text-xs font-medium whitespace-nowrap mt-0.5"
-                      style={{ color: isActive ? "var(--accent-blue)" : "var(--text-muted)" }}>
+                <span
+                  className="font-mono text-xs font-medium whitespace-nowrap mt-0.5"
+                  style={{ color: isActive ? "var(--accent-blue)" : "var(--text-muted)" }}
+                >
                   {formatTimestamp(chapter.seconds)}
                 </span>
-                <span className="text-sm leading-snug"
-                      style={{ color: "var(--text-secondary)", fontWeight: isActive ? 500 : 400 }}>
+                <span
+                  className="text-sm leading-snug"
+                  style={{ color: "var(--text-secondary)", fontWeight: isActive ? 500 : 400 }}
+                >
                   {chapter.title}
                 </span>
               </div>
@@ -127,7 +97,10 @@ export function ChapterList({
       <div className="mt-3 pt-3 border-t border-default">
         <p className="text-xs text-muted text-center">
           {activeIndex >= 0 ? (
-            <>Chapter <span className="font-medium">{activeIndex + 1}</span> of <span className="font-medium">{validChapters.length}</span></>
+            <>
+              Chapter <span className="font-medium">{activeIndex + 1}</span> of{" "}
+              <span className="font-medium">{validChapters.length}</span>
+            </>
           ) : (
             <>Select a chapter to navigate</>
           )}

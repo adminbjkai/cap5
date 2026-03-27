@@ -9,6 +9,7 @@ import {
 } from '../lib/api';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { ProviderStatusPanel } from '../components/ProviderStatusPanel';
+import { FeedbackMessage } from '../components/ui';
 import { buildPublicObjectUrl, formatDuration } from '../lib/format';
 
 type LibrarySort = 'date_desc' | 'name_asc' | 'duration_desc';
@@ -232,34 +233,18 @@ export function HomePage() {
             ))}
           </div>
         ) : !loadingLibrary && libraryItems.length === 0 && !libraryError ? (
-          <div className="panel-subtle border-dashed flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
-              <svg
-                className="h-6 w-6 text-muted"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="font-semibold">No videos yet</h3>
-            <p className="mt-1 max-w-xs text-sm text-muted">
-              Record or upload your first clip to start building your library.
-            </p>
-            <Link to="/record" className="btn-primary mt-6">
-              Create first recording
-            </Link>
-          </div>
+          <FeedbackMessage
+            type="empty"
+            title="No videos yet"
+            message="Record or upload your first clip to start building your library."
+            action={<Link to="/record" className="btn-primary mt-2">Create first recording</Link>}
+          />
         ) : visibleItems.length === 0 ? (
-          <div className="panel-subtle border-dashed py-10 text-center">
-            <p className="text-sm text-muted">No videos match the selected filter.</p>
-          </div>
+          <FeedbackMessage
+            type="empty"
+            message="No videos match the selected filter."
+            className="py-10"
+          />
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
             {visibleItems.map((item, index) => (

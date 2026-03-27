@@ -1,5 +1,6 @@
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { VideoStatusResponse } from "../../lib/api";
+import { Spinner } from "../../components/ui";
 
 type VideoPageHeaderProps = {
   displayTitle: string;
@@ -206,19 +207,13 @@ export function VideoPageHeader({
             className="btn-secondary p-1.5"
             title="Refresh status"
           >
-            <svg
-              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
+            {loading ? (
+              <Spinner size="sm" />
+            ) : (
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
           </button>
           <button
             type="button"
@@ -266,19 +261,7 @@ export function VideoPageHeader({
             disabled={isRetrying}
             className="btn-primary flex items-center gap-1 px-2.5 py-1 text-xs"
           >
-            <svg
-              className={`h-3 w-3 ${isRetrying ? "animate-spin" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
+            {isRetrying && <Spinner size="sm" />}
             {isRetrying ? "Retrying…" : "Retry processing"}
           </button>
           {retryMessage && (

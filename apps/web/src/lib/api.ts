@@ -166,9 +166,32 @@ export type ProviderStatusResponse = {
   }>;
 };
 
+// ── ApiError ─────────────────────────────────────────────────────────────────
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+// ── Base fetcher ──────────────────────────────────────────────────────────────
+export async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new ApiError(res.status, `${res.status} ${res.statusText}: ${body}`);
+  }
+  return (await res.json()) as T;
+}
+
+// Keep backward-compat alias (used internally only)
 async function parseJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
+    const body = await res.text().catch(() => "");
+    throw new ApiError(res.status, `${res.status} ${res.statusText}: ${body}`);
   }
   return (await res.json()) as T;
 }
@@ -181,67 +204,55 @@ function newIdempotencyKey(prefix: string): string {
 }
 
 export async function createVideo(name?: string): Promise<VideoCreateResponse> {
-  return parseJson<VideoCreateResponse>(
-    await fetch("/api/videos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("videos") },
-      body: JSON.stringify(name ? { name } : {})
-    })
-  );
+  return fetcher<VideoCreateResponse>("/api/videos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("videos") },
+    body: JSON.stringify(name ? { name } : {}),
+  });
 }
 
 export async function requestSignedUpload(videoId: string, contentType: string): Promise<SignedUploadResponse> {
-  return parseJson<SignedUploadResponse>(
-    await fetch("/api/uploads/signed", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("upload-signed") },
-      body: JSON.stringify({ videoId, contentType })
-    })
-  );
+  return fetcher<SignedUploadResponse>("/api/uploads/signed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("upload-signed") },
+    body: JSON.stringify({ videoId, contentType }),
+  });
 }
 
 export async function completeUpload(videoId: string): Promise<CompleteUploadResponse> {
-  return parseJson<CompleteUploadResponse>(
-    await fetch("/api/uploads/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("upload-complete") },
-      body: JSON.stringify({ videoId })
-    })
-  );
+  return fetcher<CompleteUploadResponse>("/api/uploads/complete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("upload-complete") },
+    body: JSON.stringify({ videoId }),
+  });
 }
 
 export async function getVideoStatus(videoId: string): Promise<VideoStatusResponse> {
-  return parseJson<VideoStatusResponse>(await fetch(`/api/videos/${encodeURIComponent(videoId)}/status`));
+  return fetcher<VideoStatusResponse>(`/api/videos/${encodeURIComponent(videoId)}/status`);
 }
 
 export async function getJobStatus(jobId: number): Promise<JobStatusResponse> {
-  return parseJson<JobStatusResponse>(await fetch(`/api/jobs/${jobId}`));
+  return fetcher<JobStatusResponse>(`/api/jobs/${jobId}`);
 }
 
-export async function retryVideo(videoId: string): Promise<{ ok: boolean; videoId: string; jobsReset: string[] }> {
-  return parseJson<{ ok: boolean; videoId: string; jobsReset: string[] }>(
-    await fetch(`/api/videos/${encodeURIComponent(videoId)}/retry`, {
-      method: "POST",
-      headers: {
-        "Idempotency-Key": newIdempotencyKey("retry")
-      }
-    })
-  );
+export type RetryVideoResponse = { ok: boolean; videoId: string; jobsReset: string[] };
+
+export async function retryVideo(videoId: string): Promise<RetryVideoResponse> {
+  return fetcher<RetryVideoResponse>(`/api/videos/${encodeURIComponent(videoId)}/retry`, {
+    method: "POST",
+    headers: { "Idempotency-Key": newIdempotencyKey("retry") },
+  });
 }
 
 export async function deleteVideo(videoId: string): Promise<DeleteVideoResponse> {
-  return parseJson<DeleteVideoResponse>(
-    await fetch(`/api/videos/${encodeURIComponent(videoId)}/delete`, {
-      method: "POST",
-      headers: {
-        "Idempotency-Key": newIdempotencyKey("delete-video")
-      }
-    })
-  );
+  return fetcher<DeleteVideoResponse>(`/api/videos/${encodeURIComponent(videoId)}/delete`, {
+    method: "POST",
+    headers: { "Idempotency-Key": newIdempotencyKey("delete-video") },
+  });
 }
 
 export async function getSystemProviderStatus(): Promise<ProviderStatusResponse> {
-  return parseJson<ProviderStatusResponse>(await fetch("/api/system/provider-status"));
+  return fetcher<ProviderStatusResponse>("/api/system/provider-status");
 }
 
 export async function saveWatchEdits(
@@ -249,16 +260,11 @@ export async function saveWatchEdits(
   payload: { title?: string | null; transcriptText?: string | null; speakerLabels?: Record<string, string> | null },
   idempotencyKey: string
 ): Promise<WatchEditsResponse> {
-  return parseJson<WatchEditsResponse>(
-    await fetch(`/api/videos/${encodeURIComponent(videoId)}/watch-edits`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": idempotencyKey
-      },
-      body: JSON.stringify(payload)
-    })
-  );
+  return fetcher<WatchEditsResponse>(`/api/videos/${encodeURIComponent(videoId)}/watch-edits`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function getLibraryVideos(params?: {
@@ -271,7 +277,7 @@ export async function getLibraryVideos(params?: {
   if (typeof params?.limit === "number" && Number.isFinite(params.limit)) queryParams.set("limit", String(params.limit));
   if (params?.sort) queryParams.set("sort", params.sort);
   const suffix = queryParams.toString();
-  return parseJson<LibraryVideosResponse>(await fetch(`/api/library/videos${suffix ? `?${suffix}` : ""}`));
+  return fetcher<LibraryVideosResponse>(`/api/library/videos${suffix ? `?${suffix}` : ""}`);
 }
 
 export type UploadProgress = {
@@ -340,16 +346,14 @@ export async function uploadMultipart(
   const totalParts = Math.ceil(blob.size / CHUNK_SIZE);
 
   // 1. Initiate
-  await parseJson<MultipartInitiateResponse>(
-    await fetch("/api/uploads/multipart/initiate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": newIdempotencyKey("mp-init")
-      },
-      body: JSON.stringify({ videoId, contentType })
-    })
-  );
+  await fetcher<MultipartInitiateResponse>("/api/uploads/multipart/initiate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": newIdempotencyKey("mp-init"),
+    },
+    body: JSON.stringify({ videoId, contentType }),
+  });
 
   const parts: Array<{ ETag: string; PartNumber: number }> = [];
   const startedAt = Date.now();
@@ -363,13 +367,11 @@ export async function uploadMultipart(
     const chunk = blob.slice(start, end);
 
     // Get presigned URL for this specific part
-    const presign = await parseJson<MultipartPresignResponse>(
-      await fetch("/api/uploads/multipart/presign-part", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("mp-presign") },
-        body: JSON.stringify({ videoId, partNumber })
-      })
-    );
+    const presign = await fetcher<MultipartPresignResponse>("/api/uploads/multipart/presign-part", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Idempotency-Key": newIdempotencyKey("mp-presign") },
+      body: JSON.stringify({ videoId, partNumber }),
+    });
 
     // Upload the chunk
     const etag = await new Promise<string>((resolve, reject) => {
@@ -415,16 +417,14 @@ export async function uploadMultipart(
   }
 
   // 3. Complete
-  const completed = await parseJson<MultipartCompleteResponse>(
-    await fetch("/api/uploads/multipart/complete", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": newIdempotencyKey("mp-complete")
-      },
-      body: JSON.stringify({ videoId, parts })
-    })
-  );
+  const completed = await fetcher<MultipartCompleteResponse>("/api/uploads/multipart/complete", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": newIdempotencyKey("mp-complete"),
+    },
+    body: JSON.stringify({ videoId, parts }),
+  });
 
   return completed.jobId;
 }

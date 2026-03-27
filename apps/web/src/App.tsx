@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useEventBusEmit } from "./lib/eventBus";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { CommandPalette, type CommandPaletteAction } from "./components/CommandPalette";
@@ -12,6 +13,7 @@ import { VideoPage } from "./pages/VideoPage";
 export function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const emitEvent = useEventBusEmit();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [paletteVideos, setPaletteVideos] = useState<LibraryVideoCard[]>([]);
@@ -56,7 +58,7 @@ export function App() {
         title: "Delete Current Video",
         subtitle: "Open delete confirmation on the active video page",
         keywords: ["delete", "remove", "video"],
-        onSelect: () => window.dispatchEvent(new CustomEvent("cap:request-delete-active-video")),
+        onSelect: () => emitEvent("cap:request-delete-active-video", undefined),
       },
     ];
 
@@ -89,7 +91,7 @@ export function App() {
         setShortcutsOpen(false);
         return;
       }
-      window.dispatchEvent(new CustomEvent("cap:escape"));
+      emitEvent("cap:escape", undefined);
     },
     onGoHome: () => navigate("/"),
     onGoRecord: () => navigate("/record"),
