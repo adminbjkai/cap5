@@ -1,135 +1,73 @@
-# cap4
+# cap5
 
-Single-tenant video processing platform with a React watch app, Fastify API, PostgreSQL-backed job queue, background worker, FFmpeg media server, and S3-compatible object storage.
+Single-tenant video processing platform — upload a recording, get back a transcript, AI-generated summary, chapters, and enrichments.
 
-## Current Repo Status
+## Features
 
-- Upload -> process -> transcript -> AI summary flow is implemented.
-- In-browser screen recording with auto-upload (recordings upload immediately after capture; file selections require manual upload).
-- Web app includes custom video controls, command palette, keyboard shortcuts, transcript review, speaker diarization, editable speaker labels, summary enrichments, and dark/light theme support.
-- The checked-in CI workflow runs lint, typecheck, unit tests, web E2E, API E2E, workspace build, and Docker build from a single workflow file at `.github/workflows/test.yml`.
-- Common local validation commands include `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm --filter @cap/web test:e2e`, and `pnpm --filter @cap/web-api test:e2e`.
-- The current repo runs without end-user authentication. Auth is intentionally out of scope for the current state.
-
-## Services
-
-- `apps/web` — React/Vite frontend
-- `apps/web-api` — Fastify API
-- `apps/worker` — queue worker for processing, transcription, and AI jobs
-- `apps/media-server` — FFmpeg wrapper invoked synchronously by the worker via POST /process
-- `packages/db` / `db/migrations` — PostgreSQL access and schema
-- `packages/logger`, `packages/config` — shared packages
+- **Upload flow** — singlepart or multipart upload to S3-compatible storage (MinIO)
+- **Video processing** — FFmpeg-based transcoding via a dedicated media-server RPC service
+- **Transcription** — Deepgram with speaker diarization; editable speaker labels
+- **AI enrichment** — Groq-powered title, summary, chapters, entities, action items, and quotes
+- **React watch app** — custom video controls, command palette (`Cmd+K`), keyboard shortcuts, transcript review, confidence highlighting, dark/light theme
+- **PostgreSQL job queue** — `FOR UPDATE SKIP LOCKED`, no Redis required
+- **HMAC-signed webhooks** — inbound progress callbacks with timestamp validation and deduplication
+- **Idempotent API** — all mutations require `Idempotency-Key`
+- **In-browser screen recording** — auto-uploads immediately after capture
 
 ## Quick Start
 
-### Prerequisites
-
-- Docker + Docker Compose
-- Node.js 20+
-- `pnpm`
-- Deepgram API key
-- Groq API key
-
-### Boot the stack
-
 ```bash
 cp .env.example .env
-# fill in at least DEEPGRAM_API_KEY and GROQ_API_KEY
-
+# Fill in at least DEEPGRAM_API_KEY and GROQ_API_KEY
 make up
+```
+
+Migrations run automatically on first boot. When the stack is healthy:
+
+```bash
 make smoke
 ```
 
-Open:
+## Service Ports
 
-- App: `http://localhost:8022`
-- API: `http://localhost:3000`
-- MinIO API: `http://localhost:8922`
-- MinIO console: `http://localhost:8923` (bound to localhost only in Compose)
+| Service         | URL                              | Notes                          |
+|-----------------|----------------------------------|--------------------------------|
+| Web app         | http://localhost:8022            | nginx serving built frontend   |
+| API             | http://localhost:3000            | Fastify — `/health`, `/ready`  |
+| MinIO API       | http://localhost:8922            | S3-compatible object storage   |
+| MinIO console   | http://localhost:8923            | Bound to localhost only        |
+| Media server    | http://localhost:3100            | Internal FFmpeg RPC            |
 
-## Upload Flow
+## Key Dev Commands
 
-The API is a two-step upload flow, not a direct multipart form upload to `/api/videos`.
-
-All mutation routes in this flow require an `Idempotency-Key` header.
-
-1. `POST /api/videos` to create the video row and upload record.
-2. `POST /api/uploads/signed` or multipart upload endpoints to obtain upload URLs.
-3. Upload bytes to MinIO/S3.
-4. `POST /api/uploads/complete` or `POST /api/uploads/multipart/complete` to enqueue processing.
-5. Poll `GET /api/videos/:id/status` or `GET /api/jobs/:id`.
-
-Singlepart example:
-
-```bash
-VIDEO_JSON=$(curl -sS -X POST http://localhost:3000/api/videos \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: create-video-1" \
-  -d '{"name":"Demo upload"}')
-
-VIDEO_ID=$(printf '%s' "$VIDEO_JSON" | jq -r '.videoId')
-
-SIGNED_JSON=$(curl -sS -X POST http://localhost:3000/api/uploads/signed \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: signed-upload-1" \
-  -d "{\"videoId\":\"$VIDEO_ID\",\"contentType\":\"video/mp4\"}")
-
-PUT_URL=$(printf '%s' "$SIGNED_JSON" | jq -r '.putUrl')
-
-curl -X PUT "$PUT_URL" \
-  -H "Content-Type: video/mp4" \
-  --data-binary @sample.mp4
-
-curl -X POST http://localhost:3000/api/uploads/complete \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: complete-upload-1" \
-  -d "{\"videoId\":\"$VIDEO_ID\"}"
-
-curl http://localhost:3000/api/videos/$VIDEO_ID/status
-```
-
-## Development Commands
-
-```bash
-make up
-make down
-make logs
-make migrate
-make reset-db
-make smoke
-
-pnpm build
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm test:integration
-pnpm --filter @cap/web test:e2e
-pnpm --filter @cap/web-api test:e2e
-pnpm dev:web
-pnpm dev:web-api
-pnpm dev:worker
-pnpm dev:media-server
-```
+| Command                                  | What it does                                  |
+|------------------------------------------|-----------------------------------------------|
+| `make up`                                | Build and start all 9 Docker services         |
+| `make down`                              | Stop all services (preserves volumes)         |
+| `make logs`                              | Tail logs for all services                    |
+| `make smoke`                             | Verify `/health` and `/ready` are up          |
+| `make migrate`                           | Re-run migrations against a running database  |
+| `make reset-db`                          | Wipe volumes and restart from scratch         |
+| `make help`                              | List all Makefile targets                     |
+| `pnpm lint`                              | ESLint across the workspace                   |
+| `pnpm typecheck`                         | TypeScript type-check across the workspace    |
+| `pnpm test`                              | Unit tests across the workspace               |
+| `pnpm --filter @cap/web test:e2e`        | Web Playwright E2E suite                      |
+| `pnpm --filter @cap/web-api test:e2e`    | API Playwright E2E suite                      |
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) — system design, state machine, services
-- [API reference](docs/api.md) — endpoints and webhook contract
-- [Database schema](docs/database.md) — tables, enums, migrations
-- [Environment variables](docs/environment.md) — full env var reference
-- [Local development](docs/local-dev.md) — Docker and no-Docker setup
-- [Deployment](docs/deployment.md) — production deployment guide
-- [Troubleshooting](docs/troubleshooting.md) — common issues and fixes
-- [Design system](docs/design-system.md) — UI tokens and components
-- [Tech stack](docs/tech-stack.md) — languages, frameworks, versions
-- [AI agents](docs/agents.md) — agent roles and conventions
-- [Master plan](docs/master-plan.md) — authoritative project roadmap
-- [Tasks](docs/tasks.md) — current and completed work
-- [QA: transcript workspace](docs/qa.md) — regression checklist for transcript and watch-page review UX
-- [Audit plan](docs/archive/audit-plan.md) — completed audit tracker
-
-## Known Issues
-
-- No end-user authentication in the current repo state.
-- Accessibility follow-up is still incomplete, but icon-button `aria-label`s are already in the shipped UI.
-- Historical audit notes live in [audit-plan.md](docs/archive/audit-plan.md).
+| File                                         | Description                                               |
+|----------------------------------------------|-----------------------------------------------------------|
+| [docs/architecture.md](docs/architecture.md) | System design, service topology, state machine, data flow |
+| [docs/api.md](docs/api.md)                   | HTTP endpoints and webhook contract                       |
+| [docs/worker.md](docs/worker.md)             | Worker module structure, job types, leasing, retries      |
+| [docs/database.md](docs/database.md)         | Tables, enums, indexes, and migration list                |
+| [docs/environment.md](docs/environment.md)   | All environment variables with descriptions               |
+| [docs/security.md](docs/security.md)         | HMAC signing, rate limiting, S3 access, no-auth rationale |
+| [docs/local-dev.md](docs/local-dev.md)       | Docker and no-Docker local setup                          |
+| [docs/deployment.md](docs/deployment.md)     | Production deployment guide                               |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Common issues and fixes                             |
+| [docs/design-system.md](docs/design-system.md) | UI tokens and component guide                          |
+| [docs/tech-stack.md](docs/tech-stack.md)     | Languages, frameworks, and versions                       |
+| [docs/agents.md](docs/agents.md)             | AI agent roles and conventions                            |

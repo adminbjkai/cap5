@@ -23,6 +23,7 @@ out/
 **/.env.production
 **/.env.test
 **/.env.*.local
+*.local
 !**/.env.example
 
 # Logs

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev-local.sh — Start cap4 services locally without Docker.
+# dev-local.sh — Start cap5 services locally without Docker.
 #
 # Prerequisites:
 #   - Node 20+ and pnpm installed
@@ -32,10 +32,18 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$REPO_ROOT"
 
-# Load .env if it exists
+# ---------------------------------------------------------------------------
+# Load .env if present.
+# Using `set -a; source .env; set +a` instead of the fragile xargs approach:
+#   - Correctly handles values with spaces
+#   - Correctly handles quoted values
+#   - Skips blank lines and comments automatically (via bash sourcing)
+# ---------------------------------------------------------------------------
 if [ -f .env ]; then
-  # shellcheck disable=SC2046
-  export $(grep -v '^#' .env | grep -v '^$' | xargs)
+  set -a
+  # shellcheck source=/dev/null
+  source .env
+  set +a
   echo "Loaded .env"
 fi
 
@@ -47,7 +55,7 @@ export MEDIA_SERVER_BASE_URL="${MEDIA_SERVER_BASE_URL:-http://localhost:3100}"
 export WEB_API_PORT="${WEB_API_PORT:-3000}"
 export MEDIA_SERVER_PORT="${MEDIA_SERVER_PORT:-3100}"
 
-# Verify critical env vars
+# Verify critical env vars (warn but don't abort — developer may still be setting up)
 if [ -z "${DEEPGRAM_API_KEY:-}" ] || [ "${DEEPGRAM_API_KEY}" = "your_deepgram_api_key_here" ]; then
   echo "WARNING: DEEPGRAM_API_KEY is not set — transcription will fail."
 fi
@@ -55,30 +63,57 @@ if [ -z "${GROQ_API_KEY:-}" ] || [ "${GROQ_API_KEY}" = "your_groq_api_key_here" 
   echo "WARNING: GROQ_API_KEY is not set — AI pipeline will fail."
 fi
 
+# ---------------------------------------------------------------------------
+# Signal handling — clean up child processes on SIGINT / SIGTERM
+# Stores PIDs as services start so we can kill them all on exit.
+# ---------------------------------------------------------------------------
+CHILD_PIDS=()
+
+cleanup() {
+  echo ""
+  echo "[dev-local] Caught signal — stopping all services..."
+  for pid in "${CHILD_PIDS[@]}"; do
+    kill "$pid" 2>/dev/null || true
+  done
+  wait 2>/dev/null || true
+  echo "[dev-local] All services stopped."
+  exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
+# ---------------------------------------------------------------------------
+# Per-service start functions
+# ---------------------------------------------------------------------------
+
 start_api() {
-  echo "[web-api] starting on :${WEB_API_PORT}"
+  echo "[web-api] Starting on :${WEB_API_PORT}"
   pnpm --filter @cap/web-api dev
 }
 
 start_worker() {
-  echo "[worker] starting"
+  echo "[worker] Starting"
   pnpm --filter @cap/worker dev
 }
 
 start_media_server() {
-  echo "[media-server] starting on :${MEDIA_SERVER_PORT}"
+  echo "[media-server] Starting on :${MEDIA_SERVER_PORT}"
   pnpm --filter @cap/media-server dev
 }
 
 start_web() {
-  echo "[web] starting Vite dev server on :5173"
+  echo "[web] Starting Vite dev server on :5173"
   pnpm --filter @cap/web dev
 }
 
 run_migrations() {
-  echo "[db] applying pending migrations via pnpm db:migrate"
+  echo "[db] Applying pending migrations via pnpm db:migrate"
   pnpm db:migrate
 }
+
+# ---------------------------------------------------------------------------
+# Mode dispatch
+# ---------------------------------------------------------------------------
 
 MODE="${1:-all}"
 
@@ -89,25 +124,40 @@ case "$MODE" in
   web)          start_web ;;
   migrate)      run_migrations ;;
   all)
-    # Run all services concurrently (requires npx concurrently or the
-    # pnpm workspace concurrency approach).
+    echo ""
+    echo "╔══════════════════════════════════════════╗"
+    echo "║  cap5 — local dev stack starting         ║"
+    echo "║  Services: web-api · worker · media-server · web  ║"
+    echo "╚══════════════════════════════════════════╝"
+    echo ""
+
+    # Prefer 'concurrently' for nicely interleaved, coloured output.
+    # Fall back to plain backgrounded processes with signal forwarding.
     if command -v concurrently &>/dev/null; then
       concurrently \
         --names "web-api,worker,media-server,web" \
         --prefix-colors "blue,green,yellow,cyan" \
-        "$(declare -f start_api); start_api" \
-        "$(declare -f start_worker); start_worker" \
-        "$(declare -f start_media_server); start_media_server" \
-        "$(declare -f start_web); start_web"
+        "pnpm --filter @cap/web-api dev" \
+        "pnpm --filter @cap/worker dev" \
+        "pnpm --filter @cap/media-server dev" \
+        "pnpm --filter @cap/web dev"
     else
-      echo "tip: install 'concurrently' for a nicer multi-service output:"
+      echo "Tip: install 'concurrently' for nicely interleaved output:"
       echo "  npm install -g concurrently"
       echo ""
-      echo "Starting services sequentially in background..."
-      start_api    &
+      echo "Starting all services in background (logs mixed to stdout)..."
+
+      start_api &
+      CHILD_PIDS+=($!)
       start_worker &
+      CHILD_PIDS+=($!)
       start_media_server &
-      start_web    &
+      CHILD_PIDS+=($!)
+      start_web &
+      CHILD_PIDS+=($!)
+
+      echo ""
+      echo "[dev-local] All services started. Press Ctrl+C to stop."
       wait
     fi
     ;;
