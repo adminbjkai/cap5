@@ -112,6 +112,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      media-server:
+        condition: service_healthy
 
   media-server:
     build:
@@ -130,8 +132,13 @@ services:
     ports:
       - "${MEDIA_SERVER_PORT:-3100}:3100"
     depends_on:
-      web-api:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "node -e \"fetch('http://localhost:3100/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   web-internal:
     image: nginx:alpine
@@ -145,6 +152,8 @@ services:
     depends_on:
       web-api:
         condition: service_healthy
+      web-builder:
+        condition: service_completed_successfully
 
   web-builder:
     build:
@@ -152,9 +161,13 @@ services:
       dockerfile: Dockerfile
     image: cap4-web-builder:prod
     # container_name: cap4-web-builder
+    restart: "no"
     command: [ "sh", "-c", "cp -rv /workspace/apps/web/dist/* /dist/" ]
     volumes:
       - web_dist:/dist
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
     # Resource limits to prevent resource exhaustion attacks
     deploy:
