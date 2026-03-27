@@ -5,10 +5,6 @@ import { CLAIM_SQL, CLAIM_SQL_WITH_EXCLUDE, RECLAIM_SQL } from "./sql.js";
 
 const env = getEnv();
 
-function log(event: string, fields: Record<string, unknown>) {
-  console.log(JSON.stringify({ service: "worker", event, ...fields }));
-}
-
 export async function claimOne(excludeTypes: JobType[] = []): Promise<JobRow | null> {
   return withTransaction(env.DATABASE_URL, async (client) => {
     const sql = excludeTypes.length > 0 ? CLAIM_SQL_WITH_EXCLUDE(excludeTypes.length) : CLAIM_SQL;
