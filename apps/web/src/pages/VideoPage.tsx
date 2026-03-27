@@ -3,7 +3,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useState,
   type KeyboardEvent,
 } from "react";
 import {
@@ -12,7 +11,6 @@ import {
   getVideoStatus,
   saveWatchEdits,
   retryVideo,
-  type JobStatusResponse,
   type VideoStatusResponse,
 } from "../lib/api";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
@@ -29,6 +27,7 @@ import { VideoPageHeader } from "./video-page/VideoPageHeader";
 import { VideoRail } from "./video-page/VideoRail";
 import { SummaryStrip } from "./video-page/SummaryStrip";
 import type { RailTab } from "./video-page/shared";
+import { useVideoStore } from "../hooks/useVideoStore";
 
 /* ── Terminal-state sets ─────────────────────────────────────────────────── */
 const TERMINAL_PROCESSING_PHASES  = new Set(["complete", "failed", "cancelled"]);
@@ -60,37 +59,19 @@ export function VideoPage() {
     return Number.isFinite(parsed) ? parsed : null;
   }, [searchParams]);
 
-  /* ── Core state ──────────────────────────────────────────────────────── */
-  const [status,                 setStatus]                = useState<VideoStatusResponse | null>(null);
-  const [jobStatus,              setJobStatus]             = useState<JobStatusResponse | null>(null);
-  const [loading,                setLoading]               = useState(false);
-  const [errorMessage,           setErrorMessage]          = useState<string | null>(null);
-  const [consecutivePollFailures,setConsecutivePollFailures] = useState(0);
-  const [lastUpdatedAt,          setLastUpdatedAt]         = useState<string | null>(null);
-  const [playbackTimeSeconds,    setPlaybackTimeSeconds]   = useState(0);
-  const [videoDurationSeconds,   setVideoDurationSeconds]  = useState(0);
-  const [seekRequest,            setSeekRequest]           = useState<{ seconds: number; requestId: number } | null>(null);
-  const [copyFeedback,           setCopyFeedback]          = useState<string | null>(null);
-
-  /* ── Title editing ───────────────────────────────────────────────────── */
-  const [isTitleEditing,  setIsTitleEditing]  = useState(false);
-  const [titleDraft,      setTitleDraft]      = useState("");
-  const [isSavingTitle,   setIsSavingTitle]   = useState(false);
-  const [titleSaveMessage,setTitleSaveMessage]= useState<string | null>(null);
-
-  /* ── Retry / delete ──────────────────────────────────────────────────── */
-  const [isRetrying,        setIsRetrying]        = useState(false);
-  const [retryMessage,      setRetryMessage]      = useState<string | null>(null);
-  const [isDeleteDialogOpen,setIsDeleteDialogOpen]= useState(false);
-  const [isDeleting,        setIsDeleting]        = useState(false);
-  const [isDeleted,         setIsDeleted]         = useState(false);
-  const [deleteError,       setDeleteError]       = useState<string | null>(null);
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
-
-  /* ── Right-rail tab ──────────────────────────────────────────────────── */
-  const [railTab, setRailTab] = useState<RailTab>("transcript");
-  const [renderedRailTab, setRenderedRailTab] = useState<RailTab>("transcript");
-  const [outgoingRailTab, setOutgoingRailTab] = useState<RailTab | null>(null);
+  /* ── Store ───────────────────────────────────────────────────────────── */
+  const {
+    status, jobStatus, loading, errorMessage, consecutivePollFailures, lastUpdatedAt,
+    playbackTimeSeconds, videoDurationSeconds: _videoDurationSeconds, seekRequest,
+    copyFeedback, isTitleEditing, titleDraft, isSavingTitle, titleSaveMessage,
+    isRetrying, retryMessage, isDeleteDialogOpen, isDeleting, isDeleted, deleteError,
+    isSummaryExpanded, railTab, renderedRailTab, outgoingRailTab,
+    setStatus, setJobStatus, setLoading, setErrorMessage, setConsecutivePollFailures,
+    setLastUpdatedAt, setPlaybackTimeSeconds, setVideoDurationSeconds, setSeekRequest,
+    setCopyFeedback, setIsTitleEditing, setTitleDraft, setIsSavingTitle, setTitleSaveMessage,
+    setIsRetrying, setRetryMessage, setIsDeleteDialogOpen, setIsDeleting, setIsDeleted,
+    setDeleteError, setIsSummaryExpanded, setRailTab, setRenderedRailTab, setOutgoingRailTab,
+  } = useVideoStore();
 
   /* ── Derived values ──────────────────────────────────────────────────── */
   const shareableResultUrl = status?.resultKey ? buildPublicObjectUrl(status.resultKey) : null;
@@ -100,7 +81,7 @@ export function VideoPage() {
     () => status?.transcript?.segments ?? [],
     [status?.transcript?.segments],
   );
-  const chapters           = useMemo(
+  const chapters = useMemo(
     () => deriveVideoChapters(status?.aiOutput, transcriptSegments),
     [status?.aiOutput, transcriptSegments],
   );
@@ -114,22 +95,21 @@ export function VideoPage() {
     return status.transcriptionStatus === "failed" || status.aiStatus === "failed";
   }, [status]);
 
+  /* ── Rail tab transition ─────────────────────────────────────────────── */
   useEffect(() => {
     if (railTab === renderedRailTab) return;
     setOutgoingRailTab(renderedRailTab);
     setRenderedRailTab(railTab);
     const timeout = window.setTimeout(() => setOutgoingRailTab(null), 180);
     return () => window.clearTimeout(timeout);
-  }, [railTab, renderedRailTab]);
+  }, [railTab, renderedRailTab, setOutgoingRailTab, setRenderedRailTab]);
 
-  useEffect(() => {
-    setIsSummaryExpanded(false);
-  }, [videoId, summaryText]);
+  useEffect(() => { setIsSummaryExpanded(false); }, [videoId, summaryText, setIsSummaryExpanded]);
 
   /* ── Title sync ──────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!isTitleEditing) setTitleDraft(displayTitle);
-  }, [displayTitle, isTitleEditing]);
+  }, [displayTitle, isTitleEditing, setTitleDraft]);
 
   /* ── Seek ────────────────────────────────────────────────────────────── */
   const requestSeek = useCallback((seconds: number) => {
@@ -137,7 +117,7 @@ export function VideoPage() {
     const clamped = Math.max(0, seconds);
     setPlaybackTimeSeconds(clamped);
     setSeekRequest((cur) => ({ seconds: clamped, requestId: (cur?.requestId ?? 0) + 1 }));
-  }, []);
+  }, [setPlaybackTimeSeconds, setSeekRequest]);
 
   /* ── Polling ─────────────────────────────────────────────────────────── */
   const refresh = useCallback(async () => {
@@ -172,7 +152,7 @@ export function VideoPage() {
     } finally {
       setLoading(false);
     }
-  }, [videoId, jobId]);
+  }, [videoId, jobId, setLoading, setErrorMessage, setStatus, setLastUpdatedAt, setConsecutivePollFailures, setJobStatus]);
 
   useEffect(() => { if (videoId) void refresh(); }, [videoId, refresh]);
 
@@ -199,7 +179,7 @@ export function VideoPage() {
       setIsRetrying(false);
       window.setTimeout(() => setRetryMessage(null), 3000);
     }
-  }, [videoId, isRetrying, refresh]);
+  }, [videoId, isRetrying, refresh, setIsRetrying, setRetryMessage]);
 
   /* ── Title save ──────────────────────────────────────────────────────── */
   const saveTitle = useCallback(async (): Promise<void> => {
@@ -217,7 +197,7 @@ export function VideoPage() {
       setIsSavingTitle(false);
       window.setTimeout(() => setTitleSaveMessage(null), 1800);
     }
-  }, [titleDraft, videoId, refresh]);
+  }, [titleDraft, videoId, refresh, setTitleSaveMessage, setIsSavingTitle, setIsTitleEditing]);
 
   const handleTitleDraftKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") { event.preventDefault(); if (!isSavingTitle) void saveTitle(); return; }
@@ -239,9 +219,7 @@ export function VideoPage() {
       await saveWatchEdits(videoId, { speakerLabels: labels }, buildWatchIdempotencyKey());
       await refresh();
       return true;
-    } catch {
-      return false;
-    }
+    } catch { return false; }
   }, [videoId, refresh]);
 
   /* ── Delete ──────────────────────────────────────────────────────────── */
@@ -257,7 +235,7 @@ export function VideoPage() {
     } finally {
       setIsDeleting(false);
     }
-  }, [videoId, isDeleting, navigate]);
+  }, [videoId, isDeleting, navigate, setIsDeleting, setDeleteError, setIsDeleted]);
 
   /* ── Copy ────────────────────────────────────────────────────────────── */
   const copyToClipboard = async (value: string, label: string) => {
@@ -266,10 +244,9 @@ export function VideoPage() {
     window.setTimeout(() => setCopyFeedback(null), 1600);
   };
 
+  /* ── Rail tab content renderer ───────────────────────────────────────── */
   const renderRailTabContent = (tab: RailTab) => {
-    if (tab === "notes") {
-      return <NotesPanel videoId={videoId} />;
-    }
+    if (tab === "notes") return <NotesPanel videoId={videoId} />;
     if (tab === "summary") {
       return (
         <SummaryCard
@@ -300,30 +277,21 @@ export function VideoPage() {
 
   useVideoPlayerShortcuts(requestSeek);
 
+  /* ── Global events ───────────────────────────────────────────────────── */
   useEffect(() => {
-    const onRequestDelete = () => {
-      setDeleteError(null);
-      setIsDeleteDialogOpen(true);
-    };
+    const onRequestDelete = () => { setDeleteError(null); setIsDeleteDialogOpen(true); };
     const onEscape = () => {
-      if (isDeleteDialogOpen && !isDeleting) {
-        setIsDeleteDialogOpen(false);
-        setDeleteError(null);
-      }
-      if (isTitleEditing && !isSavingTitle) {
-        setTitleDraft(displayTitle);
-        setIsTitleEditing(false);
-        setTitleSaveMessage(null);
-      }
+      if (isDeleteDialogOpen && !isDeleting) { setIsDeleteDialogOpen(false); setDeleteError(null); }
+      if (isTitleEditing && !isSavingTitle) { setTitleDraft(displayTitle); setIsTitleEditing(false); setTitleSaveMessage(null); }
     };
-
     window.addEventListener("cap:request-delete-active-video", onRequestDelete);
     window.addEventListener("cap:escape", onEscape);
     return () => {
       window.removeEventListener("cap:request-delete-active-video", onRequestDelete);
       window.removeEventListener("cap:escape", onEscape);
     };
-  }, [displayTitle, isDeleteDialogOpen, isDeleting, isSavingTitle, isTitleEditing]);
+  }, [displayTitle, isDeleteDialogOpen, isDeleting, isSavingTitle, isTitleEditing,
+      setDeleteError, setIsDeleteDialogOpen, setTitleDraft, setIsTitleEditing, setTitleSaveMessage]);
 
   /* ── Guard ───────────────────────────────────────────────────────────── */
   if (!videoId) {
@@ -356,27 +324,17 @@ export function VideoPage() {
         titleDraft={titleDraft}
         isSavingTitle={isSavingTitle}
         titleSaveMessage={titleSaveMessage}
-        onStartTitleEdit={() => {
-          setTitleDraft(displayTitle);
-          setIsTitleEditing(true);
-          setTitleSaveMessage(null);
-        }}
+        onStartTitleEdit={() => { setTitleDraft(displayTitle); setIsTitleEditing(true); setTitleSaveMessage(null); }}
         onTitleDraftChange={(event) => setTitleDraft(event.target.value)}
         onTitleDraftKeyDown={handleTitleDraftKeyDown}
         onSaveTitle={() => void saveTitle()}
-        onCancelTitleEdit={() => {
-          setTitleDraft(displayTitle);
-          setIsTitleEditing(false);
-        }}
+        onCancelTitleEdit={() => { setTitleDraft(displayTitle); setIsTitleEditing(false); }}
         shareableResultUrl={shareableResultUrl}
         videoUrl={videoUrl}
         onCopyUrl={() => void copyToClipboard(shareableResultUrl ?? "", "URL")}
         onRefresh={() => void refresh()}
         loading={loading}
-        onOpenDeleteDialog={() => {
-          setDeleteError(null);
-          setIsDeleteDialogOpen(true);
-        }}
+        onOpenDeleteDialog={() => { setDeleteError(null); setIsDeleteDialogOpen(true); }}
         isProcessing={isProcessing}
         processingPhase={status?.processingPhase}
         processingProgress={status?.processingProgress}
@@ -390,11 +348,7 @@ export function VideoPage() {
         jobStatusLabel={jobStatus?.status ?? null}
       />
 
-      {/* ── Two-column layout ──────────────────────────────────────────── */}
-      {/* Video left (~62%), right rail (~38%) */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-
-        {/* ── Left: Player ──────────────────────────────────────────────── */}
         <div className="min-w-0">
           {loading && !status ? (
             <div className="workspace-card overflow-hidden p-0">
@@ -428,18 +382,17 @@ export function VideoPage() {
           summaryText={summaryText}
           isExpanded={isSummaryExpanded}
           shouldTruncate={shouldTruncateSummary}
-          onToggleExpanded={() => setIsSummaryExpanded((current) => !current)}
+          onToggleExpanded={() => setIsSummaryExpanded((cur) => !cur)}
         />
       )}
 
-      {/* ── Below-the-fold: Chapters ───────────────────────────────────── */}
       {chapters.length > 0 && (
         <div className="mt-5">
           <h2 className="text-sm font-semibold mb-2 text-foreground">Chapters</h2>
           <ChapterList
             chapters={chapters}
             currentSeconds={playbackTimeSeconds}
-            durationSeconds={videoDurationSeconds}
+            durationSeconds={_videoDurationSeconds}
             onSeek={requestSeek}
             inline
           />
