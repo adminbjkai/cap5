@@ -136,8 +136,8 @@ export function AppShell({ children, overlays }: AppShellProps) {
             C
           </div>
           <span
-            className="text-xl font-bold tracking-tight"
-            style={{ color: 'var(--text-primary)' }}
+            className="text-xl font-bold tracking-tight text-foreground"
+            
           >
             Cap4
           </span>
@@ -175,7 +175,7 @@ export function AppShell({ children, overlays }: AppShellProps) {
           borderColor: 'color-mix(in srgb, var(--border-default) 82%, transparent)',
         }}
       >
-        <Link to="/" className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+        <Link to="/" className="text-lg font-bold text-foreground">
           Cap4
         </Link>
         <div className="flex items-center gap-1.5">
@@ -234,7 +234,7 @@ export function AppShell({ children, overlays }: AppShellProps) {
         className={`lg:hidden fixed left-0 top-0 z-50 flex h-full w-64 flex-col transform transition-transform duration-300 ease-in-out p-6 ${isMobileMenuOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'}`}
         style={{ background: 'var(--bg-surface)', borderRight: '1px solid var(--border-default)' }}
       >
-        <div className="mb-8 font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
+        <div className="mb-8 font-bold text-xl text-foreground">
           Cap4
         </div>
         <nav className="flex flex-col gap-2">

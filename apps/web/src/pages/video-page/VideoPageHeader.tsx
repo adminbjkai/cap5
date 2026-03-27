@@ -67,16 +67,16 @@ export function VideoPageHeader({
           {!isTitleEditing ? (
             <div className="flex flex-wrap items-baseline gap-2">
               <h1
-                className="truncate text-xl font-bold tracking-tight"
-                style={{ color: "var(--text-primary)" }}
+                className="truncate text-xl font-bold tracking-tight text-foreground"
+                
               >
                 {displayTitle}
               </h1>
               <button
                 type="button"
                 onClick={onStartTitleEdit}
-                className="text-[11px] transition-colors"
-                style={{ color: "var(--text-muted)" }}
+                className="text-[11px] transition-colors text-muted"
+                
                 onMouseEnter={(event) => {
                   event.currentTarget.style.color = "var(--text-secondary)";
                 }}
@@ -128,14 +128,14 @@ export function VideoPageHeader({
           )}
 
           <div
-            className="mt-1 flex flex-wrap items-center gap-2 text-xs"
-            style={{ color: "var(--text-muted)" }}
+            className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted"
+            
           >
             {isProcessing && (
               <span className="inline-flex items-center gap-1.5">
                 <span
-                  className="h-1.5 w-1.5 rounded-full animate-pulse"
-                  style={{ background: "var(--accent-blue)" }}
+                  className="h-1.5 w-1.5 rounded-full animate-pulse bg-blue"
+                  
                 />
                 Processing
               </span>
@@ -168,14 +168,14 @@ export function VideoPageHeader({
                 background: "var(--bg-surface-subtle)",
               }}
             >
-              <span className="truncate font-mono text-[11px]" style={{ color: "var(--text-muted)" }}>
+              <span className="truncate font-mono text-[11px] text-muted">
                 {shareableResultUrl.replace(/^https?:\/\//, "")}
               </span>
               <button
                 type="button"
                 onClick={onCopyUrl}
-                className="shrink-0 transition-colors"
-                style={{ color: "var(--text-muted)" }}
+                className="shrink-0 transition-colors text-muted"
+                
                 title="Copy URL"
               >
                 <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -239,13 +239,13 @@ export function VideoPageHeader({
             background: "var(--accent-blue-subtle)",
           }}
         >
-          <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-surface-muted)" }}>
+          <div className="h-1 flex-1 rounded-full bg-surface-muted">
             <div
               className="progress-active-bar h-full rounded-full transition-all duration-500"
               style={{ width: `${Math.max(5, processingProgress ?? 0)}%` }}
             />
           </div>
-          <span className="shrink-0 text-[11px] font-medium" style={{ color: "var(--accent-blue)" }}>
+          <span className="shrink-0 text-[11px] font-medium text-blue">
             {processingProgress != null ? `${processingProgress}%` : processingPhase}
           </span>
         </div>
@@ -253,7 +253,7 @@ export function VideoPageHeader({
 
       {errorMessage && <p className="panel-warning mt-2 text-xs">{errorMessage}</p>}
       {copyFeedback && (
-        <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+        <p className="mt-1 text-[11px] text-muted">
           {copyFeedback}
         </p>
       )}

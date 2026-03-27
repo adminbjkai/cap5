@@ -435,7 +435,7 @@ export function VideoPage() {
       {/* ── Below-the-fold: Chapters ───────────────────────────────────── */}
       {chapters.length > 0 && (
         <div className="mt-5">
-          <h2 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Chapters</h2>
+          <h2 className="text-sm font-semibold mb-2 text-foreground">Chapters</h2>
           <ChapterList
             chapters={chapters}
             currentSeconds={playbackTimeSeconds}

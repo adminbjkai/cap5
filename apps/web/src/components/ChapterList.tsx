@@ -77,7 +77,7 @@ export function ChapterList({
                 {chapter.title}
               </span>
               {isActive && (
-                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "var(--accent-blue)" }} />
+                <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-blue" />
               )}
             </button>
           );

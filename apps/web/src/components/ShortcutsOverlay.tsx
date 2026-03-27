@@ -59,13 +59,13 @@ export function ShortcutsOverlay({ open, onClose }: ShortcutsOverlayProps) {
         <div className="space-y-4">
           {GROUPS.map((group) => (
             <section key={group.title}>
-              <h3 className="mb-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              <h3 className="mb-2 text-sm font-semibold text-foreground">
                 {group.title}
               </h3>
               <ul className="space-y-1.5">
                 {group.items.map((item) => (
                   <li key={`${group.title}-${item.keys}`} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--border-default)", background: "var(--bg-surface-subtle)" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>{item.action}</span>
+                    <span className="text-secondary">{item.action}</span>
                     <kbd className="rounded-md border px-2 py-0.5 font-mono text-xs" style={{ borderColor: "var(--border-strong)", color: "var(--text-primary)", background: "var(--bg-surface)" }}>
                       {item.keys}
                     </kbd>

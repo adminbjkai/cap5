@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buildPublicObjectUrl } from "../lib/format";
+import { buildPublicObjectUrl, formatTimestamp } from "../lib/format";
 import { CustomVideoControls } from "./CustomVideoControls";
 
 type SeekRequest = { seconds: number; requestId: number };
@@ -20,17 +20,6 @@ const SPEAKER_PALETTE = [
   "#f59e0b",
   "#6366f1",
 ];
-
-function formatTimestamp(secondsInput: number): string {
-  const totalSeconds = Math.max(0, Math.floor(secondsInput));
-  const hours   = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
 
 export function PlayerCard({
   resultKey,
@@ -195,15 +184,15 @@ export function PlayerCard({
     return (
       <div className="rounded-xl border shadow-card overflow-hidden"
            style={{ background: "var(--bg-surface)", borderColor: "var(--border-default)" }}>
-        <div className="aspect-video flex items-center justify-center"
-             style={{ background: "var(--bg-surface-subtle)" }}>
+        <div className="aspect-video flex items-center justify-center bg-surface-subtle"
+             >
           <div className="text-center">
-            <svg className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--text-muted)" }}
+            <svg className="h-10 w-10 mx-auto mb-3 text-muted"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Video processing…</p>
-            <p className="text-xs mt-1"        style={{ color: "var(--text-muted)" }}>This page updates automatically</p>
+            <p className="text-sm font-medium text-muted">Video processing…</p>
+            <p className="text-xs mt-1 text-muted">This page updates automatically</p>
           </div>
         </div>
       </div>
@@ -260,11 +249,11 @@ export function PlayerCard({
         <div className="px-4 pt-3 pb-4">
 
           {/* Current / Next chapter labels */}
-          <div className="flex flex-wrap items-center justify-between gap-1 mb-2.5 text-xs"
-               style={{ color: "var(--text-muted)" }}>
+          <div className="flex flex-wrap items-center justify-between gap-1 mb-2.5 text-xs text-muted"
+               >
             <span>
               Now:&nbsp;
-              <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+              <span className="font-medium text-foreground">
                 {currentChapter ? currentChapter.title : "Start"}
               </span>
             </span>
@@ -315,12 +304,12 @@ export function PlayerCard({
                   transform: "translateX(-50%)",
                 }}
               >
-                <p className="font-mono text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                <p className="font-mono text-[11px] font-semibold text-muted">
                   {formatTimestamp(hoverSeconds)}
                 </p>
                 {hoverChapterLabel && (
-                  <p className="text-xs leading-snug mt-0.5 max-w-[160px] text-left"
-                     style={{ color: "var(--text-primary)" }}>
+                  <p className="text-xs leading-snug mt-0.5 max-w-[160px] text-left text-foreground"
+                     >
                     {hoverChapterLabel}
                   </p>
                 )}
@@ -340,10 +329,10 @@ export function PlayerCard({
                 >
                   {showDotTip && (
                     <div className="popover-panel pointer-events-none absolute bottom-full left-1/2 mb-2 w-52 -translate-x-1/2 px-2.5 py-1.5 text-left">
-                      <p className="font-mono text-[11px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                      <p className="font-mono text-[11px] font-semibold text-muted">
                         {formatTimestamp(chapter.seconds)}
                       </p>
-                      <p className="text-xs leading-snug" style={{ color: "var(--text-primary)" }}>
+                      <p className="text-xs leading-snug text-foreground">
                         {chapter.title}
                       </p>
                     </div>
@@ -388,7 +377,7 @@ export function PlayerCard({
 
           {/* Time display + Prev / Next */}
           <div className="mt-2.5 flex items-center justify-between gap-2">
-            <p className="font-mono text-xs" style={{ color: "var(--text-muted)" }}>
+            <p className="font-mono text-xs text-muted">
               {formatTimestamp(playbackTimeSeconds)}
               <span className="mx-1 opacity-40">/</span>
               {durationSeconds > 0 ? formatTimestamp(durationSeconds) : "--:--"}
@@ -417,8 +406,8 @@ export function PlayerCard({
 
       {/* Time display when there are no chapters */}
       {timelineChapters.length === 0 && (
-        <div className="px-4 pt-2.5 pb-2 flex items-center justify-center font-mono text-sm"
-             style={{ color: "var(--text-muted)" }}>
+        <div className="px-4 pt-2.5 pb-2 flex items-center justify-center font-mono text-sm text-muted"
+             >
           {formatTimestamp(playbackTimeSeconds)}
           <span className="mx-1 opacity-40">/</span>
           {durationSeconds > 0 ? formatTimestamp(durationSeconds) : "--:--"}

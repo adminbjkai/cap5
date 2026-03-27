@@ -60,12 +60,12 @@ export function TranscriptControls({
       {!isEditing && (
         <div className={`flex items-center gap-1.5 ${compact ? "px-2.5 py-2" : "px-3 py-2"}`}>
           <div
-            className="flex-1 flex items-center gap-1.5 bg-surface-subtle rounded-md border px-2 py-1.5"
-            style={{ borderColor: "var(--border-default)" }}
+            className="flex-1 flex items-center gap-1.5 bg-surface-subtle rounded-md border px-2 py-1.5 border-border-default"
+            
           >
             <svg
-              className="h-3.5 w-3.5 flex-shrink-0"
-              style={{ color: "var(--text-muted)" }}
+              className="h-3.5 w-3.5 flex-shrink-0 text-muted"
+              
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -80,15 +80,15 @@ export function TranscriptControls({
               value={searchQuery}
               onChange={(event) => onSearchQueryChange(event.target.value)}
               placeholder="Search transcript…"
-              className="flex-1 bg-transparent text-[13px] outline-none"
-              style={{ color: "var(--text-primary)" }}
+              className="flex-1 bg-transparent text-[13px] outline-none text-foreground"
+              
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={onClearSearch}
-                className="text-[13px] font-medium"
-                style={{ color: "var(--text-muted)" }}
+                className="text-[13px] font-medium text-muted"
+                
                 title="Clear search"
               >
                 ✕
@@ -97,8 +97,8 @@ export function TranscriptControls({
           </div>
           {searchQuery && (
             <span
-              className="text-[11px] font-medium whitespace-nowrap"
-              style={{ color: "var(--text-secondary)" }}
+              className="text-[11px] font-medium whitespace-nowrap text-secondary"
+              
             >
               {searchMatchesCount === 0 ? "No matches" : `${activeMatchIndex + 1}/${searchMatchesCount}`}
             </span>

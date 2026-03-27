@@ -60,7 +60,7 @@ export function CommandPalette({ open, actions, onClose }: CommandPaletteProps) 
         className="dialog-surface w-full max-w-2xl overflow-hidden rounded-xl border shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b px-4 py-3" style={{ borderColor: "var(--border-default)" }}>
+        <div className="border-b px-4 py-3 border-border-default">
           <input
             ref={inputRef}
             type="text"
@@ -95,7 +95,7 @@ export function CommandPalette({ open, actions, onClose }: CommandPaletteProps) 
 
         <ul className="max-h-[55vh] overflow-y-auto p-2">
           {filteredActions.length === 0 ? (
-            <li className="rounded-lg px-3 py-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+            <li className="rounded-lg px-3 py-6 text-center text-sm text-muted">
               No matching commands
             </li>
           ) : (
@@ -115,7 +115,7 @@ export function CommandPalette({ open, actions, onClose }: CommandPaletteProps) 
                   >
                     <p className="text-sm font-medium">{action.title}</p>
                     {action.subtitle ? (
-                      <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                      <p className="mt-0.5 text-xs text-muted">
                         {action.subtitle}
                       </p>
                     ) : null}
