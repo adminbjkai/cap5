@@ -13,11 +13,11 @@
 #   minio server ~/minio-data &            # start in background (port 9000)
 #
 # Quick PostgreSQL setup (one-time):
-#   createdb cap4
+#   createdb cap5
 #   createuser app --pwprompt              # set password to "app" or update DATABASE_URL
 #
 # Then apply migrations once:
-#   DATABASE_URL=postgres://app:app@localhost:5432/cap4 pnpm db:migrate
+#   DATABASE_URL=postgres://app:app@localhost:5432/cap5 pnpm db:migrate
 #
 # Usage:
 #   ./scripts/dev-local.sh           # start all 4 services concurrently
@@ -48,7 +48,7 @@ if [ -f .env ]; then
 fi
 
 # Override service URLs for local (no Docker) operation
-export DATABASE_URL="${DATABASE_URL:-postgres://app:app@localhost:5432/cap4}"
+export DATABASE_URL="${DATABASE_URL:-postgres://app:app@localhost:5432/cap5}"
 export S3_ENDPOINT="${S3_ENDPOINT:-http://localhost:9000}"
 export S3_PUBLIC_ENDPOINT="${S3_PUBLIC_ENDPOINT:-http://localhost:9000}"
 export MEDIA_SERVER_BASE_URL="${MEDIA_SERVER_BASE_URL:-http://localhost:3100}"

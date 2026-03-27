@@ -99,7 +99,7 @@ export async function webhookRoutes(app: FastifyInstance) {
   // Register a dedicated webhook content-type parser that returns the raw body as a string.
   // Avoid overriding Fastify's global JSON parser for normal API routes.
   app.addContentTypeParser(
-    "application/cap4-webhook+json",
+    "application/cap5-webhook+json",
     { parseAs: "buffer" },
     async (_req: FastifyRequest, body: Buffer) => body.toString("utf8")
   );

@@ -79,7 +79,7 @@ Important runtime vars:
 - `MEDIA_SERVER_BASE_URL`
 - `S3_ENDPOINT`
 - `S3_PUBLIC_ENDPOINT`
-- `S3_BUCKET` (currently defaults to `cap4` in code)
+- `S3_BUCKET` (defaults to `cap5`)
 - `WORKER_MAX_ATTEMPTS`
 - `WORKER_POLL_MS`
 - `WORKER_HEARTBEAT_MS`

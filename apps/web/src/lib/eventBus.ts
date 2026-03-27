@@ -6,8 +6,8 @@ import { createContext, useCallback, useContext, useEffect, useRef } from "react
 
 // ── Event map ─────────────────────────────────────────────────────────────────
 export type AppEventMap = {
-  "cap:request-delete-active-video": undefined;
-  "cap:escape": undefined;
+  "cap5:request-delete-active-video": undefined;
+  "cap5:escape": undefined;
 };
 
 export type AppEventName = keyof AppEventMap;

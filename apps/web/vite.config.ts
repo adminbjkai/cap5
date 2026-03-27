@@ -26,7 +26,7 @@ export default defineConfig({
         changeOrigin: true
       },
       // Proxy MinIO bucket requests for local development
-      "/cap4": {
+      "/cap5": {
         target: "http://localhost:9000",
         changeOrigin: true,
         rewrite: (path) => path

@@ -277,12 +277,12 @@ export function VideoPage() {
   useVideoPlayerShortcuts(requestSeek);
 
   /* ── Global events (via EventBus — replaces window.addEventListener) ──── */
-  useEventBusOn("cap:request-delete-active-video", () => {
+  useEventBusOn("cap5:request-delete-active-video", () => {
     setDeleteError(null);
     setIsDeleteDialogOpen(true);
   });
 
-  useEventBusOn("cap:escape", () => {
+  useEventBusOn("cap5:escape", () => {
     if (isDeleteDialogOpen && !isDeleting) {
       setIsDeleteDialogOpen(false);
       setDeleteError(null);

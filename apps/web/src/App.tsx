@@ -58,7 +58,7 @@ export function App() {
         title: "Delete Current Video",
         subtitle: "Open delete confirmation on the active video page",
         keywords: ["delete", "remove", "video"],
-        onSelect: () => emitEvent("cap:request-delete-active-video", undefined),
+        onSelect: () => emitEvent("cap5:request-delete-active-video", undefined),
       },
     ];
 
@@ -91,7 +91,7 @@ export function App() {
         setShortcutsOpen(false);
         return;
       }
-      emitEvent("cap:escape", undefined);
+      emitEvent("cap5:escape", undefined);
     },
     onGoHome: () => navigate("/"),
     onGoRecord: () => navigate("/record"),

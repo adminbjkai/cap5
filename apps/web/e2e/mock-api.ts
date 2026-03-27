@@ -7,8 +7,8 @@ export const MOCK_VIDEO_STATUS = {
   name: "API Architecture Walkthrough",
   processingPhase: "complete",
   processingProgress: 100,
-  resultKey: "cap4/00000000-0000-0000-0000-000000000001/result.mp4",
-  thumbnailKey: "cap4/00000000-0000-0000-0000-000000000001/thumb.jpg",
+  resultKey: "cap5/00000000-0000-0000-0000-000000000001/result.mp4",
+  thumbnailKey: "cap5/00000000-0000-0000-0000-000000000001/thumb.jpg",
   errorMessage: null,
   transcriptionStatus: "complete",
   aiStatus: "complete",
@@ -18,7 +18,7 @@ export const MOCK_VIDEO_STATUS = {
   transcript: {
     provider: "deepgram",
     language: "en",
-    vttKey: "cap4/00000000-0000-0000-0000-000000000001/transcript.vtt",
+    vttKey: "cap5/00000000-0000-0000-0000-000000000001/transcript.vtt",
     text: "Welcome to this demonstration. Today we cover API architecture. Let us begin with the basics.",
     segments: [
       { startSeconds: 0, endSeconds: 5, text: "Welcome to this demonstration." },
@@ -45,7 +45,7 @@ export const MOCK_VIDEO_STATUS = {
     ],
     entities: {
       people: ["Murry"],
-      organizations: ["Cap4"],
+      organizations: ["Cap5"],
       locations: [],
       dates: ["2026-03-24"]
     },

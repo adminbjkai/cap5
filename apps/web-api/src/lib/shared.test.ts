@@ -5,10 +5,6 @@ type SharedModule = typeof import("./shared.js");
 let shared: SharedModule;
 
 beforeAll(async () => {
-  process.env.DATABASE_URL ??= "postgres://cap4:cap4_test@localhost:5432/cap4_test";
-  process.env.MEDIA_SERVER_WEBHOOK_SECRET ??= "test-webhook-secret-with-32-plus-chars";
-  process.env.DEEPGRAM_API_KEY ??= "test-deepgram";
-  process.env.GROQ_API_KEY ??= "test-groq";
   shared = await import("./shared.js");
 });
 

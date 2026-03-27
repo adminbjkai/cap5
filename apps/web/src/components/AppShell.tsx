@@ -12,12 +12,30 @@ type AppShellProps = PropsWithChildren<{
   overlays?: ReactNode;
 }>;
 
+const THEME_KEY = 'cap5-theme';
+const LEGACY_THEME_KEY = 'cap-theme';
+
+function loadStoredTheme(): 'light' | 'dark' | null {
+  if (typeof window === 'undefined') return 'light';
+
+  const current = window.localStorage.getItem(THEME_KEY);
+  if (current === 'light' || current === 'dark') {
+    return current;
+  }
+
+  const legacy = window.localStorage.getItem(LEGACY_THEME_KEY);
+  if (legacy === 'light' || legacy === 'dark') {
+    window.localStorage.setItem(THEME_KEY, legacy);
+    return legacy;
+  }
+
+  return null;
+}
+
 export function AppShell({ children, overlays }: AppShellProps) {
   const location = useLocation();
   const storedTheme = useMemo<'light' | 'dark' | null>(() => {
-    if (typeof window === 'undefined') return 'light';
-    const stored = window.localStorage.getItem('cap-theme');
-    return stored === 'light' || stored === 'dark' ? stored : null;
+    return loadStoredTheme();
   }, []);
 
   const initialTheme = useMemo<'light' | 'dark'>(() => {
@@ -59,7 +77,7 @@ export function AppShell({ children, overlays }: AppShellProps) {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
     setHasUserOverride(true);
-    window.localStorage.setItem('cap-theme', nextTheme);
+    window.localStorage.setItem(THEME_KEY, nextTheme);
   };
 
   const themeButton = (
@@ -139,7 +157,7 @@ export function AppShell({ children, overlays }: AppShellProps) {
             className="text-xl font-bold tracking-tight text-foreground"
             
           >
-            Cap4
+            Cap5
           </span>
         </div>
 
@@ -176,7 +194,7 @@ export function AppShell({ children, overlays }: AppShellProps) {
         }}
       >
         <Link to="/" className="text-lg font-bold text-foreground">
-          Cap4
+          Cap5
         </Link>
         <div className="flex items-center gap-1.5">
           <button
@@ -235,7 +253,7 @@ export function AppShell({ children, overlays }: AppShellProps) {
         style={{ background: 'var(--bg-surface)', borderRight: '1px solid var(--border-default)' }}
       >
         <div className="mb-8 font-bold text-xl text-foreground">
-          Cap4
+          Cap5
         </div>
         <nav className="flex flex-col gap-2">
           {navItems.map(item => (

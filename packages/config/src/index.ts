@@ -30,7 +30,7 @@ const BaseEnv = z.object({
   S3_REGION: z.string().default("us-east-1"),
   S3_ACCESS_KEY: z.string().min(1),
   S3_SECRET_KEY: z.string().min(1),
-  S3_BUCKET: z.string().default("cap4"),
+  S3_BUCKET: z.string().default("cap5"),
   S3_FORCE_PATH_STYLE: z.string().default("true"),
 });
 

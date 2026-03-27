@@ -9,17 +9,33 @@ export type RecentSession = {
   errorMessage?: string | null;
 };
 
-const KEY = "cap4.recent_sessions";
+const KEY = "cap5.recent_sessions";
+const LEGACY_KEY = "cap4.recent_sessions";
 
-export function loadRecentSessions(): RecentSession[] {
+function parseSessions(raw: string | null): RecentSession[] {
+  if (!raw) return [];
+
   try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return [];
     const parsed = JSON.parse(raw) as RecentSession[];
     if (!Array.isArray(parsed)) return [];
     return parsed
       .filter((row) => typeof row?.videoId === "string")
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch {
+    return [];
+  }
+}
+
+export function loadRecentSessions(): RecentSession[] {
+  try {
+    const current = parseSessions(window.localStorage.getItem(KEY));
+    if (current.length > 0) return current;
+
+    const legacy = parseSessions(window.localStorage.getItem(LEGACY_KEY));
+    if (legacy.length > 0) {
+      window.localStorage.setItem(KEY, JSON.stringify(legacy));
+    }
+    return legacy;
   } catch {
     return [];
   }

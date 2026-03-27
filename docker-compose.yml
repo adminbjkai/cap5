@@ -1,19 +1,19 @@
 services:
   postgres:
     image: postgres:16-alpine
-    # container_name: cap4-postgres
+    # container_name: cap5-postgres
     restart: unless-stopped
     # SECURITY: No default credentials - must be provided via environment
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-cap4}
+      POSTGRES_DB: ${POSTGRES_DB:-cap5}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-cap4}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-cap5}" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -22,7 +22,7 @@ services:
   # web-api and worker wait for this to complete before starting.
   migrate:
     image: postgres:16-alpine
-    # container_name: cap4-migrate
+    # container_name: cap5-migrate
     restart: "no"
     env_file:
       - .env
@@ -38,7 +38,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-01-20T14-49-07Z
-    # container_name: cap4-minio
+    # container_name: cap5-minio
     restart: unless-stopped
     # Console always binds to 9001 inside the container; host port is controlled by MINIO_CONSOLE_PORT.
     command: server /data --console-address ":9001"
@@ -54,20 +54,20 @@ services:
 
   minio-setup:
     image: minio/mc:RELEASE.2025-01-17T23-25-50Z
-    # container_name: cap4-minio-setup
+    # container_name: cap5-minio-setup
     depends_on:
       - minio
     volumes:
       - ./docker/minio/cors.json:/config/cors.json:ro
     entrypoint: >
-      /bin/sh -c " until mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minio} ${MINIO_ROOT_PASSWORD:-minio123}; do sleep 1; done && mc mb -p local/${S3_BUCKET:-cap4} || true && mc anonymous set public local/${S3_BUCKET:-cap4} || true && mc cors set local/${S3_BUCKET:-cap4} /config/cors.json || true "
+      /bin/sh -c " until mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minio} ${MINIO_ROOT_PASSWORD:-minio123}; do sleep 1; done && mc mb -p local/${S3_BUCKET:-cap5} || true && mc anonymous set public local/${S3_BUCKET:-cap5} || true && mc cors set local/${S3_BUCKET:-cap5} /config/cors.json || true "
 
   web-api:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cap4-web-api:prod
-    # container_name: cap4-web-api
+    image: cap5-web-api:prod
+    # container_name: cap5-web-api
     restart: unless-stopped
     command: pnpm --filter @cap/web-api start
     env_file:
@@ -98,8 +98,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cap4-worker:prod
-    # container_name: cap4-worker
+    image: cap5-worker:prod
+    # container_name: cap5-worker
     restart: unless-stopped
     command: pnpm --filter @cap/worker start
     env_file:
@@ -119,8 +119,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cap4-media-server:prod
-    # container_name: cap4-media-server
+    image: cap5-media-server:prod
+    # container_name: cap5-media-server
     restart: unless-stopped
     command: pnpm --filter @cap/media-server start
     env_file:
@@ -142,7 +142,7 @@ services:
 
   web-internal:
     image: nginx:alpine
-    # container_name: cap4-web-internal
+    # container_name: cap5-web-internal
     restart: unless-stopped
     ports:
       - "8022:80"
@@ -159,8 +159,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: cap4-web-builder:prod
-    # container_name: cap4-web-builder
+    image: cap5-web-builder:prod
+    # container_name: cap5-web-builder
     restart: "no"
     command: [ "sh", "-c", "cp -rv /workspace/apps/web/dist/* /dist/" ]
     volumes:

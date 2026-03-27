@@ -5,10 +5,6 @@ type WebhooksModule = typeof import("./webhooks.js");
 let webhooks: WebhooksModule;
 
 beforeAll(async () => {
-  process.env.DATABASE_URL ??= "postgres://cap4:cap4_test@localhost:5432/cap4_test";
-  process.env.MEDIA_SERVER_WEBHOOK_SECRET ??= "test-webhook-secret-with-32-plus-chars";
-  process.env.DEEPGRAM_API_KEY ??= "test-deepgram";
-  process.env.GROQ_API_KEY ??= "test-groq";
   webhooks = await import("./webhooks.js");
 });
 

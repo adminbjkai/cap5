@@ -13,17 +13,6 @@ Single-tenant video processing platform for uploading or recording video, normal
 - `packages/logger` — structured logging
 - `db/migrations` — schema source of truth
 
-## Reality check
-
-The repo directory is `cap5`, but a lot of runtime/config defaults still use `cap4` names today:
-
-- root package name
-- `.env.example` DB and bucket defaults
-- default `S3_BUCKET`
-- frontend storage keys and `/cap4` asset pathing
-
-So treat **cap5 as the repo/project name** and **cap4 as current runtime naming still present in code** until that cleanup is done.
-
 ## What works now
 
 - create video records
@@ -38,6 +27,7 @@ So treat **cap5 as the repo/project name** and **cap4 as current runtime naming 
 - inbound HMAC-verified media-server progress webhooks
 - outbound notification webhooks to per-video `webhookUrl`
 - PostgreSQL queue with leases, heartbeats, reclaim, and dead-lettering
+- `cap5` runtime naming across defaults, paths, local state, and webhook media type
 
 ## What is intentionally not here
 

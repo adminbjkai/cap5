@@ -9,7 +9,7 @@ import {
   getSystemProviderStatus,
 } from "../lib/shared.js";
 
-const uiPublicBucketBase = `${(process.env.S3_PUBLIC_ENDPOINT ?? "http://localhost:9000").replace(/\/$/, "")}/${process.env.S3_BUCKET ?? "cap4"}`;
+const uiPublicBucketBase = `${(process.env.S3_PUBLIC_ENDPOINT ?? "http://localhost:9000").replace(/\/$/, "")}/${process.env.S3_BUCKET ?? "cap5"}`;
 
 export async function systemRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
@@ -35,7 +35,7 @@ export async function systemRoutes(app: FastifyInstance) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cap4 Upload UI</title>
+  <title>Cap5 Upload UI</title>
   <style>
     body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:900px;margin:32px auto;padding:0 16px;color:#111}
     .card{border:1px solid #ddd;border-radius:10px;padding:16px}
@@ -47,7 +47,7 @@ export async function systemRoutes(app: FastifyInstance) {
   </style>
 </head>
 <body>
-  <h1>Cap4 Dev UI</h1>
+  <h1>Cap5 Dev UI</h1>
   <p class="muted">Runs full upload flow: create video, request signed PUT, upload file, complete upload, poll status.</p>
   <div class="card">
     <div class="row">

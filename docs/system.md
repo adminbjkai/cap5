@@ -244,4 +244,3 @@ Outbound payloads are plain JSON POSTs and are **not signed** today.
 - signed outbound webhooks
 - active HLS processing path
 - polished production deployment story beyond Docker Compose
-- fully cleaned-up `cap4` -> `cap5` naming across runtime code/config

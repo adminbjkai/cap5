@@ -1,28 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
 
+const STORAGE_PREFIX = "cap5:verified-segments:";
+const LEGACY_STORAGE_PREFIX = "cap4:verified-segments:";
+
+function readStoredSegmentSet(storageKey: string, legacyStorageKey: string): Set<number> {
+  try {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) return new Set(JSON.parse(stored) as number[]);
+
+    const legacyStored = localStorage.getItem(legacyStorageKey);
+    if (!legacyStored) return new Set();
+
+    localStorage.setItem(storageKey, legacyStored);
+    return new Set(JSON.parse(legacyStored) as number[]);
+  } catch {
+    return new Set();
+  }
+}
+
 export function useVerifiedSegments(videoId: string | undefined) {
   const storageKey = useMemo(
-    () => `cap4:verified-segments:${videoId ?? "unknown"}`,
+    () => `${STORAGE_PREFIX}${videoId ?? "unknown"}`,
+    [videoId]
+  );
+  const legacyStorageKey = useMemo(
+    () => `${LEGACY_STORAGE_PREFIX}${videoId ?? "unknown"}`,
     [videoId]
   );
 
   const [verifiedSegments, setVerifiedSegments] = useState<Set<number>>(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      return stored ? new Set(JSON.parse(stored) as number[]) : new Set();
-    } catch {
-      return new Set();
-    }
+    return readStoredSegmentSet(storageKey, legacyStorageKey);
   });
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      setVerifiedSegments(stored ? new Set(JSON.parse(stored) as number[]) : new Set());
-    } catch {
-      setVerifiedSegments(new Set());
-    }
-  }, [storageKey]);
+    setVerifiedSegments(readStoredSegmentSet(storageKey, legacyStorageKey));
+  }, [legacyStorageKey, storageKey]);
 
   useEffect(() => {
     if (verifiedSegments.size === 0) {

@@ -232,7 +232,7 @@ async function generateSingleChunk(
   controller: AbortController,
   timeout: ReturnType<typeof setTimeout>
 ): Promise<GroqSummary> {
-  const systemPrompt = `You are Cap AI, an expert at analyzing video content and creating structured summaries.
+  const systemPrompt = `You are Cap5 AI, an expert at analyzing video content and creating structured summaries.
 
 Analyze this transcript and return a JSON response:
 {
@@ -369,7 +369,7 @@ async function generateMultipleChunks(
   let failedChunks = 0;
 
   for (let i = 0; i < chunks.length; i++) {
-    const chunkPrompt = `You are Cap AI, an expert at analyzing video content. This is section ${i + 1} of ${chunks.length} from a longer video.
+    const chunkPrompt = `You are Cap5 AI, an expert at analyzing video content. This is section ${i + 1} of ${chunks.length} from a longer video.
 
 Analyze this section and provide JSON:
 {
@@ -417,7 +417,7 @@ ${chunks[i]}`;
           temperature: 0.3,
           response_format: { type: "json_object" },
           messages: [
-            { role: "system", content: "You are Cap AI, an expert at analyzing video content." },
+            { role: "system", content: "You are Cap5 AI, an expert at analyzing video content." },
             { role: "user", content: chunkPrompt }
           ]
         }),
@@ -504,7 +504,7 @@ ${chunks[i]}`;
     ? `\n\nAction items identified:\n${allActionItems.map((a, i) => `${i + 1}. ${a.task}${a.assignee ? ` (${a.assignee})` : ''}${a.deadline ? ` - ${a.deadline}` : ''}`).join('\n')}`
     : '';
 
-  const finalPrompt = `You are Cap AI, an expert at synthesizing information into comprehensive, well-organized summaries.
+  const finalPrompt = `You are Cap5 AI, an expert at synthesizing information into comprehensive, well-organized summaries.
 
 Based on these detailed section analyses of a video, create a thorough final summary that captures EVERYTHING important.
 
@@ -537,7 +537,7 @@ Return ONLY valid JSON without any markdown formatting or code blocks.`;
         temperature: 0.3,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: "You are Cap AI, an expert at synthesizing information." },
+          { role: "system", content: "You are Cap5 AI, an expert at synthesizing information." },
           { role: "user", content: finalPrompt }
         ]
       }),

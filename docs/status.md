@@ -16,7 +16,6 @@ What works:
 
 What is still rough:
 
-- cap4/cap5 naming drift across code, config, tests, paths, and storage defaults
 - outbound webhooks are unsigned
 - no auth / authz
 - no real production deployment story beyond Compose
@@ -42,39 +41,27 @@ Highest-risk gaps:
 
 ## Next improvement areas
 
-### 1. Naming cleanup
-
-Standardize `cap4` -> `cap5` across:
-
-- package metadata
-- `.env.example`
-- bucket defaults
-- frontend storage keys
-- webhook content type if that rename is desired
-- Vite/nginx asset pathing
-- tests and fixtures
-
-### 2. Security baseline
+### 1. Security baseline
 
 - add auth / authorization
 - sign outbound webhooks
 - strengthen outbound request policy beyond current create-time webhook URL checks
 - review MinIO exposure defaults for anything beyond local/dev use
 
-### 3. Queue and workflow resilience
+### 2. Queue and workflow resilience
 
 - add tests for delete + cleanup artifacts
 - add tests for retry semantics
 - add tests for reclaim / expired leases / terminal failure transitions
 - decide whether `WORKER_CLAIM_BATCH_SIZE` should be used or removed
 
-### 4. Frontend quality
+### 3. Frontend quality
 
 - cover recording flow end-to-end
 - improve error handling around dead jobs and degraded providers
 - make processing/retry states clearer in the UI
 
-### 5. Deployment/ops
+### 4. Deployment/ops
 
 - add a real production topology story
 - add observability guidance

@@ -195,7 +195,7 @@ Behavior:
 - updates `videos` only when phase/progress move forward monotonically
 - may queue outbound `deliver_webhook`
 
-Current content type in code/tests still uses `application/cap4-webhook+json`.
+Canonical content type is `application/cap5-webhook+json`.
 
 ## Outbound webhook events
 

@@ -142,7 +142,7 @@ test.describe('Uploads API - Singlepart', () => {
 
     const uploadResult = await putToPresignedUrl(
       signedBody.putUrl,
-      'cap4-singlepart-upload',
+      'cap5-singlepart-upload',
       signedBody.headers
     );
 
@@ -406,7 +406,7 @@ test.describe('Uploads API - Multipart', () => {
 
     const uploadResult = await putToPresignedUrl(
       presignBody.putUrl,
-      'cap4-multipart-upload-part-1'
+      'cap5-multipart-upload-part-1'
     );
 
     expect(uploadResult.ok).toBe(true);
