@@ -161,8 +161,12 @@ export class Logger {
 }
 
 // Factory function for creating service loggers
-export function createLogger(config: LoggerConfig): Logger {
-  return new Logger(config);
+// Supports both: createLogger("name") and createLogger({ name: "...", ... })
+export function createLogger(nameOrConfig: string | LoggerConfig, options?: Partial<LoggerConfig>): Logger {
+  if (typeof nameOrConfig === "string") {
+    return new Logger({ name: nameOrConfig, ...options });
+  }
+  return new Logger(nameOrConfig);
 }
 
 // Default request ID header
