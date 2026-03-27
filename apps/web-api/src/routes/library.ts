@@ -12,17 +12,19 @@ import {
   decodeLibraryCursor,
   normalizeCursorTimestamp
 } from "../lib/shared.js";
+import { parseQuery } from "../plugins/validation.js";
+import { LibraryQuerySchema } from "../types/schemas.js";
 
 const env = getEnv();
 
 export async function libraryRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { cursor?: string; limit?: string; sort?: string } }>("/api/library/videos", async (req, reply) => {
-    const sort = req.query?.sort === "created_asc" ? "created_asc" : "created_desc";
-    const rawLimit = Number.parseInt(String(req.query?.limit ?? "24"), 10);
-    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 24;
+    const q = parseQuery(LibraryQuerySchema, req.query);
+    const sort = q.sort ?? "created_desc";
+    const limit = q.limit ?? 24;
 
-    const decodedCursor = req.query?.cursor ? decodeLibraryCursor(req.query.cursor) : null;
-    if (req.query?.cursor && !decodedCursor) {
+    const decodedCursor = q.cursor ? decodeLibraryCursor(q.cursor) : null;
+    if (q.cursor && !decodedCursor) {
       return reply.code(400).send(badRequest("Invalid cursor"));
     }
 

@@ -148,6 +148,9 @@ importers:
       fastify-raw-body:
         specifier: ^5.0.0
         version: 5.0.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@playwright/test':
         specifier: ^1.58.2
@@ -217,13 +220,13 @@ importers:
       pino:
         specifier: ^9.5.0
         version: 9.14.0
-      pino-pretty:
-        specifier: ^13.0.0
-        version: 13.1.3
     devDependencies:
       '@types/node':
         specifier: ^25.3.0
         version: 25.3.0
+      pino-pretty:
+        specifier: ^13.0.0
+        version: 13.1.3
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
@@ -587,7 +590,6 @@ packages:
   '@esbuild/linux-arm64@0.21.5':
     resolution: {integrity: sha512-ibKvmyYzKsBeX8d8I7MH/TMfWDXBF3db4qM6sy+7re0YXya+K1cem3on9XgdT2EQGMu4hQyZhan7TeQ8XkGp4Q==}
     engines: {node: '>=12'}
-    cpu: [arm64]
     os: [linux]
 
   '@esbuild/linux-arm64@0.27.3':
@@ -946,7 +948,6 @@ packages:
 
   '@rollup/rollup-linux-arm64-gnu@4.59.0':
     resolution: {integrity: sha512-jYgUGk5aLd1nUb1CtQ8E+t5JhLc9x5WdBKew9ZgAXg7DBk0ZHErLHdXM24rfX+bKrFe+Xp5YuJo54I5HFjGDAA==}
-    cpu: [arm64]
     os: [linux]
 
   '@rollup/rollup-linux-arm64-musl@4.59.0':

@@ -34,13 +34,6 @@ type ValidatedWebhookPayload = {
   };
 };
 
-function log(app: FastifyInstance, fields: Record<string, unknown>) {
-  if (app.serviceLogger) {
-    app.serviceLogger.info("web-api log", fields);
-  } else {
-    console.log(JSON.stringify({ service: "web-api", ...fields }));
-  }
-}
 
 function toOptionalFiniteNumber(value: unknown): number | undefined {
   const numeric = Number(value);
@@ -269,7 +262,7 @@ export async function webhookRoutes(app: FastifyInstance) {
           return { duplicate, applied };
         });
       } catch (error) {
-        log(app, {
+        req.serviceLog?.info("web-api log", {
           event: "webhook.processing_failed",
           videoId: payload.videoId,
           jobId: payload.jobId,
@@ -278,7 +271,7 @@ export async function webhookRoutes(app: FastifyInstance) {
         return reply.code(500).send({ ok: false, error: "Webhook processing failed" });
       }
 
-      log(app, {
+      req.serviceLog?.info("web-api log", {
         event: "webhook.processed",
         videoId: payload.videoId,
         jobId: payload.jobId,

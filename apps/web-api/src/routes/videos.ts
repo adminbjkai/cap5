@@ -10,6 +10,12 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { getEnv } from "@cap/config";
 import { query, withTransaction } from "@cap/db";
+import { parseBody, parseParams } from "../plugins/validation.js";
+import {
+  CreateVideoSchema,
+  VideoIdParamSchema,
+  WatchEditsBodySchema,
+} from "../types/schemas.js";
 import {
   badRequest,
   sha256Hex,
@@ -82,8 +88,9 @@ export async function videoRoutes(app: FastifyInstance) {
     const idempotencyKey = requireIdempotencyKeyOrReply(reply, req.headers as Record<string, unknown>);
     if (!idempotencyKey) return;
 
-    const name = String(req.body?.name ?? "Untitled Video").trim() || "Untitled Video";
-    const webhookUrl = req.body?.webhookUrl ? String(req.body.webhookUrl).trim() : null;
+    const body = parseBody(CreateVideoSchema, req.body);
+    const name = (body.name ?? "Untitled Video").trim() || "Untitled Video";
+    const webhookUrl = body.webhookUrl ? body.webhookUrl.trim() : null;
 
     if (webhookUrl) {
       try {
@@ -288,7 +295,7 @@ export async function videoRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.patch<{ Params: { id: string }; Body: { title?: string | null; transcriptText?: string | null; speakerLabels?: Record<string, string> | null } }>("/api/videos/:id/watch-edits", async (req, reply) => {
-    const videoId = req.params.id;
+    const { id: videoId } = parseParams(VideoIdParamSchema, req.params);
     const idempotencyKey = requireIdempotencyKeyOrReply(reply, req.headers as Record<string, unknown>);
     if (!idempotencyKey) return;
 
@@ -299,15 +306,13 @@ export async function videoRoutes(app: FastifyInstance) {
       return reply.code(400).send(badRequest("At least one field must be provided: title, transcriptText, speakerLabels"));
     }
 
-    const title = titleProvided ? String(req.body?.title ?? "").trim() : null;
-    const transcriptText = transcriptProvided ? String(req.body?.transcriptText ?? "").trim() : null;
-    const speakerLabels = speakerLabelsProvided ? normalizeSpeakerLabels(req.body?.speakerLabels ?? {}) : null;
+    const parsedBody = parseBody(WatchEditsBodySchema, req.body);
+    const title = titleProvided ? (parsedBody.title ?? "").trim() : null;
+    const transcriptText = transcriptProvided ? (parsedBody.transcriptText ?? "").trim() : null;
+    const speakerLabels = speakerLabelsProvided ? normalizeSpeakerLabels(parsedBody.speakerLabels ?? {}) : null;
     if (titleProvided && title !== null) {
       if (title.length === 0) {
         return reply.code(400).send(badRequest("Title cannot be empty"));
-      }
-      if (title.length > 500) {
-        return reply.code(400).send(badRequest("Title too long (max 500 characters)"));
       }
     }
     const endpointKey = `/api/videos/${videoId}/watch-edits`;
@@ -319,36 +324,9 @@ export async function videoRoutes(app: FastifyInstance) {
     }));
 
     const result = await withTransaction(env.DATABASE_URL, async (client) => {
-      const idempotencyInsert = await client.query<{ endpoint: string; idempotency_key: string }>(
-        `INSERT INTO idempotency_keys (endpoint, idempotency_key, request_hash, expires_at)
-         VALUES ($1, $2, $3, now() + interval '24 hours')
-         ON CONFLICT DO NOTHING
-         RETURNING endpoint, idempotency_key`,
-        [endpointKey, idempotencyKey, requestHash]
-      );
-
-      if (idempotencyInsert.rowCount === 0) {
-        const existingKey = await client.query<{ request_hash: string; status_code: number | null; response_body: unknown }>(
-          `SELECT request_hash, status_code, response_body
-           FROM idempotency_keys
-           WHERE endpoint = $1 AND idempotency_key = $2`,
-          [endpointKey, idempotencyKey]
-        );
-
-        if (existingKey.rowCount === 0) {
-          return { statusCode: 409, body: badRequest("Idempotency key collision") };
-        }
-
-        const row = existingKey.rows[0]!;
-        if (row.request_hash !== requestHash) {
-          return { statusCode: 409, body: badRequest("Idempotency key reuse with different request payload") };
-        }
-
-        if (typeof row.status_code === "number" && row.response_body && typeof row.response_body === "object") {
-          return { statusCode: row.status_code, body: row.response_body as Record<string, unknown> };
-        }
-
-        return { statusCode: 409, body: badRequest("Duplicate request still in progress") };
+      const begin = await idempotencyBegin({ client, endpoint: endpointKey, idempotencyKey, requestHash, ttlInterval: "24 hours" });
+      if (begin.kind === "cached" || begin.kind === "conflict") {
+        return { statusCode: begin.statusCode, body: begin.body };
       }
 
       const videoLookup = await client.query<{ id: string }>(
@@ -360,12 +338,7 @@ export async function videoRoutes(app: FastifyInstance) {
       );
       if (videoLookup.rowCount === 0) {
         const body = { ok: false, error: "Video not found" };
-        await client.query(
-          `UPDATE idempotency_keys
-           SET status_code = 404, response_body = $3::jsonb
-           WHERE endpoint = $1 AND idempotency_key = $2`,
-          [endpointKey, idempotencyKey, JSON.stringify(body)]
-        );
+        await idempotencyFinish({ client, endpoint: endpointKey, idempotencyKey, statusCode: 404, body });
         return { statusCode: 404, body };
       }
 
@@ -435,12 +408,7 @@ export async function videoRoutes(app: FastifyInstance) {
         }
       };
 
-      await client.query(
-        `UPDATE idempotency_keys
-         SET status_code = 200, response_body = $3::jsonb
-         WHERE endpoint = $1 AND idempotency_key = $2`,
-        [endpointKey, idempotencyKey, JSON.stringify(body)]
-      );
+      await idempotencyFinish({ client, endpoint: endpointKey, idempotencyKey, statusCode: 200, body });
 
       return { statusCode: 200, body };
     });
@@ -535,28 +503,9 @@ export async function videoRoutes(app: FastifyInstance) {
 
     const result = await withTransaction(env.DATABASE_URL, async (client) => {
       // 1. Idempotency Check
-      const idemp = await client.query(
-        `INSERT INTO idempotency_keys (endpoint, idempotency_key, request_hash, expires_at)
-         VALUES ($1, $2, $3, now() + interval '24 hours')
-         ON CONFLICT DO NOTHING
-         RETURNING endpoint, idempotency_key`,
-        [endpointKey, idempotencyKey, requestHash]
-      );
-
-      if (idemp.rowCount === 0) {
-        const existing = await client.query(
-          `SELECT request_hash, status_code, response_body
-           FROM idempotency_keys
-           WHERE endpoint = $1 AND idempotency_key = $2`,
-          [endpointKey, idempotencyKey]
-        );
-        if ((existing.rowCount ?? 0) > 0) {
-          const row = existing.rows[0];
-          if (row.request_hash !== requestHash) return { statusCode: 409, body: badRequest("Idempotency key reuse with different payload") };
-          if (row.status_code) return { statusCode: row.status_code, body: row.response_body };
-          return { statusCode: 409, body: badRequest("Duplicate request still in progress") };
-        }
-        return { statusCode: 409, body: badRequest("Idempotency key collision") };
+      const begin = await idempotencyBegin({ client, endpoint: endpointKey, idempotencyKey, requestHash, ttlInterval: "24 hours" });
+      if (begin.kind === "cached" || begin.kind === "conflict") {
+        return { statusCode: begin.statusCode, body: begin.body };
       }
 
       // 2. Video existence
@@ -570,7 +519,7 @@ export async function videoRoutes(app: FastifyInstance) {
       );
       if (videoResult.rowCount === 0) {
         const body = { ok: false, error: "Video not found" };
-        await client.query(`UPDATE idempotency_keys SET status_code = 404, response_body = $3::jsonb WHERE endpoint = $1 AND idempotency_key = $2`, [endpointKey, idempotencyKey, JSON.stringify(body)]);
+        await idempotencyFinish({ client, endpoint: endpointKey, idempotencyKey, statusCode: 404, body });
         return { statusCode: 404, body };
       }
 
@@ -617,7 +566,7 @@ export async function videoRoutes(app: FastifyInstance) {
 
       // 5. Success
       const body = { ok: true, videoId, jobsReset };
-      await client.query(`UPDATE idempotency_keys SET status_code = 200, response_body = $3::jsonb WHERE endpoint = $1 AND idempotency_key = $2`, [endpointKey, idempotencyKey, JSON.stringify(body)]);
+      await idempotencyFinish({ client, endpoint: endpointKey, idempotencyKey, statusCode: 200, body });
       return { statusCode: 200, body };
     });
 
