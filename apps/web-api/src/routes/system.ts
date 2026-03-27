@@ -18,8 +18,8 @@ import {
   getSystemProviderStatus,
   getInternalS3ClientAndBucket,
   PutObjectCommand,
-  JobType,
-  ProcessResponse
+  type JobType,
+  type ProcessResponse
 } from "../lib/shared.js";
 
 const env = getEnv();

@@ -1,4 +1,4 @@
-import pino, { Logger as PinoLogger, LoggerOptions } from 'pino';
+import pino, { type Logger as PinoLogger, type LoggerOptions } from 'pino';
 import { randomUUID } from 'crypto';
 
 // Redact sensitive fields from logs

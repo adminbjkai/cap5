@@ -13,7 +13,7 @@ import {
   badRequest,
   verifyWebhookSignature,
   phaseRank,
-  WebhookPayload
+  type WebhookPayload
 } from "../lib/shared.js";
 
 const env = getEnv();

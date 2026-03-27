@@ -1,5 +1,5 @@
-import Fastify, { FastifyRequest } from "fastify";
-import rateLimit, { errorResponseBuilderContext } from "@fastify/rate-limit";
+import Fastify, { type FastifyRequest } from "fastify";
+import rateLimit, { type errorResponseBuilderContext } from "@fastify/rate-limit";
 import rawBody from "fastify-raw-body";
 import { getEnv } from "@cap/config";
 import loggingPlugin from "./plugins/logging.js";

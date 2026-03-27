@@ -1,6 +1,6 @@
-import { FastifyPluginAsync } from 'fastify';
+import { type FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
-import { createLogger, Logger, REQUEST_ID_HEADER, LogContext } from '@cap/logger';
+import { createLogger, Logger, REQUEST_ID_HEADER, type LogContext } from '@cap/logger';
 
 // Augment Fastify types to include our custom logger
 declare module 'fastify' {
