@@ -21,7 +21,7 @@ export async function libraryRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { cursor?: string; limit?: string; sort?: string } }>("/api/library/videos", async (req, reply) => {
     const q = parseQuery(LibraryQuerySchema, req.query);
     const sort = q.sort ?? "created_desc";
-    const limit = q.limit ?? 24;
+    const limit: number = q.limit ?? 24;
 
     const decodedCursor = q.cursor ? decodeLibraryCursor(q.cursor) : null;
     if (q.cursor && !decodedCursor) {
