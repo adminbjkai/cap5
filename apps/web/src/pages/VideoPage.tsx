@@ -5,6 +5,7 @@ import {
   useMemo,
   type KeyboardEvent,
 } from "react";
+import { useEventBusOn } from "../lib/eventBus";
 import {
   deleteVideo,
   getJobStatus,
@@ -17,7 +18,6 @@ import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { upsertRecentSession } from "../lib/sessions";
 import { PlayerCard } from "../components/PlayerCard";
 import { TranscriptCard } from "../components/TranscriptCard";
-import { SummaryCard } from "../components/SummaryCard";
 import { SummaryCardCompact } from "../components/SummaryCardCompact";
 import { ChapterListInline } from "../components/ChapterListInline";
 import { buildPublicObjectUrl } from "../lib/format";
@@ -276,21 +276,23 @@ export function VideoPage() {
 
   useVideoPlayerShortcuts(requestSeek);
 
-  /* ── Global events ───────────────────────────────────────────────────── */
-  useEffect(() => {
-    const onRequestDelete = () => { setDeleteError(null); setIsDeleteDialogOpen(true); };
-    const onEscape = () => {
-      if (isDeleteDialogOpen && !isDeleting) { setIsDeleteDialogOpen(false); setDeleteError(null); }
-      if (isTitleEditing && !isSavingTitle) { setTitleDraft(displayTitle); setIsTitleEditing(false); setTitleSaveMessage(null); }
-    };
-    window.addEventListener("cap:request-delete-active-video", onRequestDelete);
-    window.addEventListener("cap:escape", onEscape);
-    return () => {
-      window.removeEventListener("cap:request-delete-active-video", onRequestDelete);
-      window.removeEventListener("cap:escape", onEscape);
-    };
-  }, [displayTitle, isDeleteDialogOpen, isDeleting, isSavingTitle, isTitleEditing,
-      setDeleteError, setIsDeleteDialogOpen, setTitleDraft, setIsTitleEditing, setTitleSaveMessage]);
+  /* ── Global events (via EventBus — replaces window.addEventListener) ──── */
+  useEventBusOn("cap:request-delete-active-video", () => {
+    setDeleteError(null);
+    setIsDeleteDialogOpen(true);
+  });
+
+  useEventBusOn("cap:escape", () => {
+    if (isDeleteDialogOpen && !isDeleting) {
+      setIsDeleteDialogOpen(false);
+      setDeleteError(null);
+    }
+    if (isTitleEditing && !isSavingTitle) {
+      setTitleDraft(displayTitle);
+      setIsTitleEditing(false);
+      setTitleSaveMessage(null);
+    }
+  });
 
   /* ── Guard ───────────────────────────────────────────────────────────── */
   if (!videoId) {
@@ -318,33 +320,41 @@ export function VideoPage() {
       />
 
       <VideoPageHeader
-        displayTitle={displayTitle}
-        isTitleEditing={isTitleEditing}
-        titleDraft={titleDraft}
-        isSavingTitle={isSavingTitle}
-        titleSaveMessage={titleSaveMessage}
-        onStartTitleEdit={() => { setTitleDraft(displayTitle); setIsTitleEditing(true); setTitleSaveMessage(null); }}
-        onTitleDraftChange={(event) => setTitleDraft(event.target.value)}
-        onTitleDraftKeyDown={handleTitleDraftKeyDown}
-        onSaveTitle={() => void saveTitle()}
-        onCancelTitleEdit={() => { setTitleDraft(displayTitle); setIsTitleEditing(false); }}
-        shareableResultUrl={shareableResultUrl}
-        videoUrl={videoUrl}
-        onCopyUrl={() => void copyToClipboard(shareableResultUrl ?? "", "URL")}
-        onRefresh={() => void refresh()}
-        loading={loading}
-        onOpenDeleteDialog={() => { setDeleteError(null); setIsDeleteDialogOpen(true); }}
-        isProcessing={isProcessing}
-        processingPhase={status?.processingPhase}
-        processingProgress={status?.processingProgress}
-        lastUpdatedAt={lastUpdatedAt}
-        errorMessage={errorMessage}
-        copyFeedback={copyFeedback}
-        showRetryButton={showRetryButton}
-        isRetrying={isRetrying}
-        retryMessage={retryMessage}
-        onRetry={() => void handleRetry()}
-        jobStatusLabel={jobStatus?.status ?? null}
+        titleProps={{
+          displayTitle,
+          isTitleEditing,
+          titleDraft,
+          isSavingTitle,
+          titleSaveMessage,
+          onStartTitleEdit: () => { setTitleDraft(displayTitle); setIsTitleEditing(true); setTitleSaveMessage(null); },
+          onTitleDraftChange: (event) => setTitleDraft(event.target.value),
+          onTitleDraftKeyDown: handleTitleDraftKeyDown,
+          onSaveTitle: () => void saveTitle(),
+          onCancelTitleEdit: () => { setTitleDraft(displayTitle); setIsTitleEditing(false); },
+        }}
+        videoProps={{
+          shareableResultUrl,
+          videoUrl,
+          isProcessing,
+          processingPhase: status?.processingPhase,
+          processingProgress: status?.processingProgress,
+          lastUpdatedAt,
+          errorMessage,
+          jobStatusLabel: jobStatus?.status ?? null,
+        }}
+        uiProps={{
+          loading,
+          copyFeedback,
+        }}
+        actionProps={{
+          onCopyUrl: () => void copyToClipboard(shareableResultUrl ?? "", "URL"),
+          onRefresh: () => void refresh(),
+          onOpenDeleteDialog: () => { setDeleteError(null); setIsDeleteDialogOpen(true); },
+          showRetryButton,
+          isRetrying,
+          retryMessage,
+          onRetry: () => void handleRetry(),
+        }}
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">

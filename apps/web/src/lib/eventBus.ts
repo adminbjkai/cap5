@@ -23,7 +23,7 @@ export class EventBus {
 
   on<K extends AppEventName>(event: K, listener: Listener<AppEventMap[K]>): () => void {
     if (!this.listeners[event]) {
-      (this.listeners[event] as Set<Listener<AppEventMap[K]>>) = new Set();
+      this.listeners[event] = new Set() as unknown as Set<Listener<AppEventMap[K]>>;
     }
     (this.listeners[event] as Set<Listener<AppEventMap[K]>>).add(listener);
     return () => {

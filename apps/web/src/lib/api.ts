@@ -187,15 +187,6 @@ export async function fetcher<T>(url: string, options?: RequestInit): Promise<T>
   return (await res.json()) as T;
 }
 
-// Keep backward-compat alias (used internally only)
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new ApiError(res.status, `${res.status} ${res.statusText}: ${body}`);
-  }
-  return (await res.json()) as T;
-}
-
 function newIdempotencyKey(prefix: string): string {
   if (typeof window !== "undefined" && window.crypto?.randomUUID) {
     return `${prefix}-${window.crypto.randomUUID()}`;

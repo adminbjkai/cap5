@@ -2,7 +2,9 @@ import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { VideoStatusResponse } from "../../lib/api";
 import { Spinner } from "../../components/ui";
 
-type VideoPageHeaderProps = {
+// ── Grouped prop types ────────────────────────────────────────────────────────
+
+export type VideoPageHeaderTitleProps = {
   displayTitle: string;
   isTitleEditing: boolean;
   titleDraft: string;
@@ -13,71 +15,93 @@ type VideoPageHeaderProps = {
   onTitleDraftKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void;
   onSaveTitle: () => void;
   onCancelTitleEdit: () => void;
+};
+
+export type VideoPageHeaderVideoProps = {
   shareableResultUrl: string | null;
   videoUrl: string | null;
-  onCopyUrl: () => void;
-  onRefresh: () => void;
-  loading: boolean;
-  onOpenDeleteDialog: () => void;
   isProcessing: boolean;
   processingPhase: VideoStatusResponse["processingPhase"] | undefined;
   processingProgress: number | null | undefined;
   lastUpdatedAt: string | null;
   errorMessage: string | null;
+  jobStatusLabel: string | null;
+};
+
+export type VideoPageHeaderUIProps = {
+  loading: boolean;
   copyFeedback: string | null;
+};
+
+export type VideoPageHeaderActionProps = {
+  onCopyUrl: () => void;
+  onRefresh: () => void;
+  onOpenDeleteDialog: () => void;
   showRetryButton: boolean;
   isRetrying: boolean;
   retryMessage: string | null;
   onRetry: () => void;
-  jobStatusLabel: string | null;
 };
 
-export function VideoPageHeader({
-  displayTitle,
-  isTitleEditing,
-  titleDraft,
-  isSavingTitle,
-  titleSaveMessage,
-  onStartTitleEdit,
-  onTitleDraftChange,
-  onTitleDraftKeyDown,
-  onSaveTitle,
-  onCancelTitleEdit,
-  shareableResultUrl,
-  videoUrl,
-  onCopyUrl,
-  onRefresh,
-  loading,
-  onOpenDeleteDialog,
-  isProcessing,
-  processingPhase,
-  processingProgress,
-  lastUpdatedAt,
-  errorMessage,
-  copyFeedback,
-  showRetryButton,
-  isRetrying,
-  retryMessage,
-  onRetry,
-  jobStatusLabel,
-}: VideoPageHeaderProps) {
+export type VideoPageHeaderProps = {
+  titleProps: VideoPageHeaderTitleProps;
+  videoProps: VideoPageHeaderVideoProps;
+  uiProps: VideoPageHeaderUIProps;
+  actionProps: VideoPageHeaderActionProps;
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function VideoPageHeader({ titleProps, videoProps, uiProps, actionProps }: VideoPageHeaderProps) {
+  const {
+    displayTitle,
+    isTitleEditing,
+    titleDraft,
+    isSavingTitle,
+    titleSaveMessage,
+    onStartTitleEdit,
+    onTitleDraftChange,
+    onTitleDraftKeyDown,
+    onSaveTitle,
+    onCancelTitleEdit,
+  } = titleProps;
+
+  const {
+    shareableResultUrl,
+    videoUrl,
+    isProcessing,
+    processingPhase,
+    processingProgress,
+    lastUpdatedAt,
+    errorMessage,
+    jobStatusLabel,
+  } = videoProps;
+
+  const { loading, copyFeedback } = uiProps;
+
+  const {
+    onCopyUrl,
+    onRefresh,
+    onOpenDeleteDialog,
+    showRetryButton,
+    isRetrying,
+    retryMessage,
+    onRetry,
+  } = actionProps;
+
   return (
     <div className="mb-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {!isTitleEditing ? (
             <div className="flex flex-wrap items-baseline gap-2">
-              <h1
-                className="truncate text-xl font-bold tracking-tight text-foreground"
-                
-              >
+              <h1 className="truncate text-xl font-bold tracking-tight text-foreground">
                 {displayTitle}
               </h1>
               <button
                 type="button"
                 onClick={onStartTitleEdit}
                 className="text-[11px] transition-colors text-muted"
-                
                 onMouseEnter={(event) => {
                   event.currentTarget.style.color = "var(--text-secondary)";
                 }}
@@ -128,16 +152,10 @@ export function VideoPageHeader({
             </p>
           )}
 
-          <div
-            className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted"
-            
-          >
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
             {isProcessing && (
               <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="h-1.5 w-1.5 rounded-full animate-pulse bg-blue"
-                  
-                />
+                <span className="h-1.5 w-1.5 rounded-full animate-pulse bg-blue" />
                 Processing
               </span>
             )}
@@ -176,7 +194,6 @@ export function VideoPageHeader({
                 type="button"
                 onClick={onCopyUrl}
                 className="shrink-0 transition-colors text-muted"
-                
                 title="Copy URL"
               >
                 <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -211,7 +228,12 @@ export function VideoPageHeader({
               <Spinner size="sm" />
             ) : (
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
               </svg>
             )}
           </button>
@@ -248,9 +270,7 @@ export function VideoPageHeader({
 
       {errorMessage && <p className="panel-warning mt-2 text-xs">{errorMessage}</p>}
       {copyFeedback && (
-        <p className="mt-1 text-[11px] text-muted">
-          {copyFeedback}
-        </p>
+        <p className="mt-1 text-[11px] text-muted">{copyFeedback}</p>
       )}
 
       {showRetryButton && (

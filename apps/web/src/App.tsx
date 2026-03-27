@@ -71,7 +71,7 @@ export function App() {
     }));
 
     return [...baseActions, ...videoActions];
-  }, [navigate, paletteVideos]);
+  }, [navigate, paletteVideos, emitEvent]);
 
   useKeyboardShortcuts({
     onToggleCommandPalette: () => {

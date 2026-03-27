@@ -128,7 +128,6 @@ export function PlayerCard({
     const clamped = Math.max(0, seconds);
     const player  = videoRef.current;
     if (player) player.currentTime = clamped;
-    window.dispatchEvent(new CustomEvent("cap:seek", { detail: { seconds: clamped } }));
     setPlaybackTimeSeconds(clamped);
     onPlaybackTimeChange?.(clamped);
     onSeekToSeconds(clamped);
