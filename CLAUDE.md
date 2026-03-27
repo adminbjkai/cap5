@@ -23,21 +23,12 @@
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Clean project overview |
+| `README.md` | Project overview, repo map, quick start |
 | `CONTRIBUTING.md` | Dev workflow and contribution guide |
-| `docs/architecture.md` | State machine, job queue, services |
-| `docs/api.md` | Full API reference + webhook contract |
-| `docs/database.md` | Schema reference + migrations |
-| `docs/environment.md` | Environment variable reference |
-| `docs/local-dev.md` | Local dev setup (Docker + no-Docker) |
-| `docs/deployment.md` | Production deployment guide |
-| `docs/troubleshooting.md` | Common issues + fixes |
-| `docs/design-system.md` | UI tokens and component guide |
-| `docs/tech-stack.md` | Languages, frameworks, versions |
-| `docs/agents.md` | AI agent roles and conventions |
-| `docs/master-plan.md` | Current-state synthesis — start here |
-| `docs/tasks.md` | Current focus (active items in GitHub Issues) |
-| `docs/qa.md` | Regression checklist for transcript workspace |
+| `docs/system.md` | Runtime topology, pipeline, queue, state model |
+| `docs/development.md` | Local dev, env, debugging, safe change workflow |
+| `docs/contracts.md` | API/webhook contracts and sensitive rules |
+| `docs/status.md` | Current gaps and improvement areas |
 
 ### Key Code Files
 

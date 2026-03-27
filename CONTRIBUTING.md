@@ -58,19 +58,13 @@ pnpm --filter @cap/web-api test:e2e
 
 ## Documentation
 
-Documentation lives in `docs/` with flat naming:
+Documentation lives in a smaller `docs/` set now:
 
-- `README.md`: onboarding and quick start
-- `docs/architecture.md`: system behavior and service boundaries
-- `docs/api.md`: HTTP endpoints and webhook contract
-- `docs/database.md`: schema and migrations
-- `docs/environment.md`: environment variable reference
-- `docs/local-dev.md`: local development setup
-- `docs/deployment.md`: production deployment
-- `docs/troubleshooting.md`: common issues and fixes
-- `docs/design-system.md`: UI tokens and components
-- `docs/tech-stack.md`: languages, frameworks, versions
-- `docs/agents.md`: AI agent conventions
+- `README.md`: onboarding, repo map, quick start
+- `docs/system.md`: how the system actually works
+- `docs/development.md`: run, debug, and change the repo
+- `docs/contracts.md`: API/webhook contracts and sensitive rules
+- `docs/status.md`: current gaps and improvement areas
 
 When a route shape, env var, migration, or service contract changes, update the matching doc in the same change.
 
