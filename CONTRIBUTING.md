@@ -71,9 +71,6 @@ Documentation lives in `docs/` with flat naming:
 - `docs/design-system.md`: UI tokens and components
 - `docs/tech-stack.md`: languages, frameworks, versions
 - `docs/agents.md`: AI agent conventions
-- `docs/archive/*`: historical planning docs only
-
-Historical plans are not authoritative unless they are explicitly linked from the current docs.
 
 When a route shape, env var, migration, or service contract changes, update the matching doc in the same change.
 

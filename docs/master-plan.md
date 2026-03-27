@@ -1,14 +1,12 @@
 ---
 title: "Master Plan"
-description: "High-level synthesis of the project, its current state, and its history"
+description: "High-level synthesis of the project and its current state"
 ---
 
 # cap5 — Master Plan
 
-**Status:** Current-state synthesis for the repo
+**Status:** Current-state reference
 **Last reviewed:** 2026-03-24
-**Purpose:** Keep one concise high-level document that explains what cap5 is,
-how it got here, and what is currently true.
 
 This document is not a feature backlog. For current technical contracts, use:
 
@@ -41,7 +39,7 @@ Current repo state:
 - GitHub Actions is consolidated into one authoritative workflow at `.github/workflows/test.yml`
 - the repo has no end-user authentication layer; auth is out of scope for the current state
 
-Current validation command set used in this repo:
+Current validation commands:
 
 - `pnpm lint`
 - `pnpm typecheck`
@@ -64,74 +62,4 @@ Current validation command set used in this repo:
   - outgoing user callbacks: `deliver_webhook` jobs to `videos.webhook_url`
 - frontend assets are built by `web-builder` and served by nginx in `web-internal`
 
-For the detailed contract, do not rely on this file. Use [architecture.md](architecture.md), [api.md](api.md), and [database.md](database.md).
-
----
-
-## Delivered Milestones
-
-### Phase 1
-
-- web-api monolith split into route modules and shared helpers
-- GitHub repo, issue templates, and CI workflows added
-
-### Phase 3
-
-- rate limiting and raw-body webhook support
-- nginx hardening
-- Fastify v5 migration
-- log redaction and security cleanup
-
-### Phase 4
-
-- integration suite for the real upload -> transcode -> transcribe -> AI flow
-- API contract coverage for uploads, videos, jobs, library, and webhooks
-
-### Phase 4.5
-
-- automatic migrations on Compose startup
-- local-dev and config docs aligned to the real stack
-- `make reset-db` and `make smoke` corrected for the current runtime
-
-### Phase 4.7
-
-- micro-interactions and theme redesign
-- custom video player controls
-- command palette and shortcut overlay
-- speaker diarization UI
-- confidence review flow
-- transcript full-text search
-- summary enrichments for entities, action items, and quotes
-
----
-
-## Historical Lineage
-
-| Version | Codebase | What mattered |
-|---------|----------|---------------|
-| v1 | `Cap_for_reference_only` | Reference product only; not the architecture cap4 uses |
-| v2 | `Cap_v2` | Established the PostgreSQL job-queue architecture |
-| v3 | `cap3` | Matured multipart upload and core service split |
-| v4 | `cap3test` | Security hardening and the base for cap4 |
-| v5 | cap5 | Full refactor: clean module structure, Zustand, Zod validation, worker decomposition, UI primitives |
-
-Two historical docs are kept intentionally:
-
-- [docs/archive/audit-plan.md](archive/audit-plan.md) — completed audit tracker
-- [docs/archive/roadmap.md](archive/roadmap.md) — archived cap3-era roadmap
-
-They are history, not the current contract.
-
----
-
-## What This File Should Not Do
-
-This file should not:
-
-- duplicate route-by-route API details
-- restate the database schema in SQL-like detail
-- describe unsupported deployment targets
-- carry speculative future phases or roadmap expansion
-
-If it starts doing any of those again, trim it back and push the details into
-the focused docs that already exist.
+For the detailed contract, use [architecture.md](architecture.md), [api.md](api.md), and [database.md](database.md).

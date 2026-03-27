@@ -50,7 +50,6 @@ When delegating to Codex, prompts include:
 ## Conventions
 
 - **CLAUDE.md** is the primary context file — loaded at the start of every Claude session
-- **Memory files** (`.claude/projects/`) persist user preferences and project state across sessions
 - All plans should be traceable: link findings to file:line, link fixes to the finding they resolve
 - Documentation updates are part of every change — never let docs drift from code
 - Audit work uses independent reviews (Claude + Codex) with cross-validation for critical findings
