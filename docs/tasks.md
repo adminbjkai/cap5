@@ -1,26 +1,24 @@
----
-title: "Tasks"
-description: "Current project focus"
----
+# Current tasks and follow-ups
 
-# Tasks — cap5
+This file reflects the codebase as it exists now, not an aspirational backlog imported from older docs.
 
-## Current Focus
+## Stabilization tasks
 
-Active work items are tracked in GitHub Issues at https://github.com/adminbjkai/cap5/issues.
+- Add tests for delete + cleanup-artifacts behavior
+- Add tests for retry semantics around `dead` and `running` jobs
+- Add explicit tests for unsigned outbound webhook delivery behavior and retry policy
+- Add tests for watch-edits title precedence (`ai_outputs.title` vs `videos.name`)
+- Add API tests for multipart upload abort/edge cases
 
-Current verification baseline:
+## Product tasks
 
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm build`
-- `pnpm test`
-- `pnpm --filter @cap/web test:e2e`
-- `pnpm --filter @cap/web-api test:e2e`
-- `pnpm db:migrate`
-- `make smoke` against a running stack
+- Add auth and user model
+- Add better notes persistence or richer note model if notes are meant to be durable
+- Add a clearer processing timeline/history in the UI
+- Add webhook delivery signing and verification guidance for consumers
 
-## Deferred / Out Of Scope
+## Operational tasks
 
-- end-user authentication
-- accessibility follow-up beyond the currently shipped state
+- Add metrics and tracing
+- Add production deployment manifests beyond compose
+- Add backup/restore docs

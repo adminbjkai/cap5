@@ -1,76 +1,163 @@
----
-title: "Architecture"
-description: "System design, state machine, Docker services, and data flow"
----
+# Architecture
 
-# cap5 Architecture
+## Runtime shape
 
-Current system architecture for the repo in this branch. This document follows the code, migrations, and `docker-compose.yml`.
+This repo is a pnpm workspace with four runtime services:
 
-## Runtime Topology
+1. **web** (`apps/web`) — React app for library, recording, watch/review, transcript editing, and summary viewing
+2. **web-api** (`apps/web-api`) — Fastify HTTP API
+3. **worker** (`apps/worker`) — background job runner using PostgreSQL as the queue
+4. **media-server** (`apps/media-server`) — FFmpeg/ffprobe wrapper for transcoding, thumbnailing, and media probing
 
-The default Docker stack defines nine services:
+Shared packages:
 
-1. `postgres` — primary database
-2. `migrate` — one-shot migration runner
-3. `minio` — S3-compatible object storage
-4. `minio-setup` — bucket/bootstrap helper
-5. `web-api` — Fastify HTTP API on port `3000`
-6. `worker` — background job runner
-7. `media-server` — FFmpeg RPC service on port `3100`
-8. `web-builder` — one-shot frontend build copier for the shared `web_dist` volume
-9. `web-internal` — nginx serving the built frontend on port `8022`
+- `@cap/config` validates env at runtime
+- `@cap/db` provides pooled DB access and transactions
+- `@cap/logger` provides structured logging helpers
 
-## High-Level Flow
+State lives in:
 
-```text
-Browser
-  -> web-internal (nginx, :8022)
-  -> web-api (:3000)
-  -> postgres + minio
+- **PostgreSQL** — canonical metadata, workflow state, jobs, transcripts, AI outputs, webhook events, idempotency cache
+- **MinIO / S3-compatible storage** — raw uploads, processed MP4s, thumbnails, VTT files
 
-web-api
-  -> creates videos/uploads rows
-  -> enqueues process_video jobs
-  -> serves status, retry, delete, upload endpoints
-  -> exposes /health and /ready for liveness/readiness
-  -> exposes POST /api/webhooks/media-server/progress for signed progress callbacks
+## Primary workflow
 
-worker
-  -> claims jobs from job_queue with leasing
-  -> runs process_video / transcribe_video / generate_ai / cleanup_artifacts / deliver_webhook
-  -> calls media-server, Deepgram, and Groq
-  -> updates database state and queues downstream jobs
+### 1. Create video
 
-media-server
-  -> exposes /health and /process endpoints
-  -> worker calls POST /process (synchronous RPC)
-  -> processes video: downloads, runs ffmpeg, uploads outputs
-  -> returns completion status to worker
-```
+`POST /api/videos`
 
-## Source Of Truth
+- inserts `videos`
+- inserts `uploads`
+- optionally stores a per-video outbound `webhook_url`
+- returns `videoId` and `rawKey`
 
-- Schema and enums: `db/migrations`
-- Environment defaults: `packages/config/src/index.ts`
-- API contracts: `apps/web-api/src/routes/*`
-- Worker behavior: `apps/worker/src/index.ts`
+### 2. Upload raw media
 
-When this document conflicts with code or migrations, code and migrations win.
+Two supported paths:
 
-## State Model
+- **single-part**
+  - `POST /api/uploads/signed`
+  - browser uploads to signed S3 URL
+  - `POST /api/uploads/complete`
+- **multipart**
+  - `POST /api/uploads/multipart/initiate`
+  - `POST /api/uploads/multipart/presign-part`
+  - browser uploads each part
+  - `POST /api/uploads/multipart/complete`
+  - optional `POST /api/uploads/multipart/abort`
 
-`videos` owns the primary processing state:
+When upload completes, the API queues `process_video`.
 
-- `processing_phase`
-- `processing_phase_rank`
-- `processing_progress`
-- `transcription_status`
-- `ai_status`
+### 3. Process video
 
-`processing_phase` is monotonic through the webhook/API update guards. Transcription and AI are tracked separately once video processing completes.
+Worker job: `process_video`
 
-Current processing phases:
+- fetches the raw upload key
+- calls `media-server /process`
+- media server downloads source from S3, transcodes to MP4, generates a thumbnail, probes metadata, uploads derived artifacts back to S3
+- worker writes `result_key`, `thumbnail_key`, duration, width, height, fps
+- if audio exists, queues `transcribe_video`
+- if no audio, marks transcription `no_audio` and AI `skipped`
+
+### 4. Transcribe
+
+Worker job: `transcribe_video`
+
+- downloads processed media from S3
+- extracts audio with FFmpeg when possible
+- sends audio/video to Deepgram
+- stores transcript segments and VTT
+- stores `speaker_labels_json` for editable display labels
+- marks transcription complete
+- queues `generate_ai`
+
+### 5. Generate AI enrichments
+
+Worker job: `generate_ai`
+
+- flattens transcript text from stored segments
+- calls Groq
+- stores title, summary, chapters, entities, action items, quotes
+- marks AI complete
+
+### 6. Watch/review
+
+The web app polls `GET /api/videos/:id/status` until terminal states are reached, then shows:
+
+- normalized MP4 playback
+- thumbnail
+- transcript + editable transcript text
+- editable speaker labels
+- AI summary, chapters, entities, action items, quotes
+
+## Queue model
+
+The worker uses PostgreSQL-only queueing.
+
+Key mechanics:
+
+- `job_queue` stores all jobs
+- active uniqueness is enforced per `(video_id, job_type)` for statuses `queued|leased|running`
+- claiming uses lease semantics
+- worker heartbeats extend leases
+- expired leases are reclaimed
+- retries are bounded by `WORKER_MAX_ATTEMPTS`
+- exhausted jobs become `dead`
+
+Current job types:
+
+- `process_video`
+- `transcribe_video`
+- `generate_ai`
+- `cleanup_artifacts`
+- `deliver_webhook`
+
+## Webhook architecture
+
+### Inbound
+
+The media server can report progress through `POST /api/webhooks/media-server/progress`.
+
+Properties:
+
+- raw-body HMAC verification using `MEDIA_SERVER_WEBHOOK_SECRET`
+- timestamp skew enforcement
+- dedupe by `(source, delivery_id)`
+- monotonic phase/progress guard
+- accepted events are recorded in `webhook_events`
+
+### Outbound
+
+If a video was created with `webhookUrl`, the worker can queue `deliver_webhook` jobs for:
+
+- `video.progress`
+- `video.transcription_complete`
+- `video.ai_complete`
+
+Outbound payloads are plain JSON POSTs. They are **not signed** in the current implementation.
+
+## Frontend structure
+
+The web app is React + Zustand + React Router.
+
+Main flows:
+
+- `HomePage` — library
+- `RecordPage` — browser recording flow
+- `VideoPage` — player, transcript review, summary rail, notes panel, retry/delete actions
+
+Notable UI behavior present in code:
+
+- command palette
+- keyboard shortcuts
+- custom video controls
+- summary strip + compact summary card
+- transcript edit panel and verified-segment helpers
+- recent session persistence in local storage/session helpers
+
+## Phase/state model
+
+Processing phases on `videos`:
 
 - `not_required`
 - `queued`
@@ -83,169 +170,9 @@ Current processing phases:
 - `failed`
 - `cancelled`
 
-Current transcription statuses:
+Separate status fields exist for:
 
-- `not_started`
-- `queued`
-- `processing`
-- `complete`
-- `no_audio`
-- `failed`
-- `skipped`
+- `transcription_status`
+- `ai_status`
 
-Current AI statuses:
-
-- `not_started`
-- `queued`
-- `processing`
-- `complete`
-- `failed`
-- `skipped`
-
-## Job Queue
-
-The worker operates on `job_queue`, not an external broker.
-
-Job types currently used by the system:
-
-- `process_video`
-- `transcribe_video`
-- `generate_ai`
-- `cleanup_artifacts`
-- `deliver_webhook`
-
-Key properties:
-
-- jobs are leased before execution
-- heartbeats extend active leases
-- expired leases can be reclaimed
-- successful jobs are acknowledged in the queue
-- terminal failures become `dead`
-
-The queue also enforces one active job per `(video_id, job_type)` for active states, which is why enqueue paths must be conflict-aware.
-
-## Upload Lifecycle
-
-1. `POST /api/videos` creates a `videos` row and a pending `uploads` row.
-2. The client requests signed upload URLs from `uploads` routes.
-3. The client uploads bytes to MinIO.
-4. The client marks the upload complete.
-5. The API enqueues `process_video`.
-6. Worker processing fans out into transcription and AI jobs as needed.
-
-## Webhooks
-
-There are two separate webhook concepts:
-
-- Incoming: `POST /api/webhooks/media-server/progress`
-  Route exists for signed progress updates and is covered by the API contract plus debug/test tooling.
-- Outgoing: `deliver_webhook` jobs
-  Sent to a user-provided `videos.webhook_url` after selected milestones.
-
-Incoming webhook requests are HMAC-signed, timestamp-validated, deduplicated by delivery ID, and applied only if they pass monotonic state guards.
-
-Current checked-in runtime note:
-
-- The main worker path calls `POST /process` on `apps/media-server` and waits for a synchronous result.
-- The checked-in `apps/media-server/src/index.ts` implementation shown in this repo does not itself emit signed progress callbacks during that mainline path.
-- `deliver_webhook` is unrelated to the internal media progress route; it sends outbound user webhooks stored in `videos.webhook_url`.
-- Debug-only routes such as `/debug/smoke` exist only in non-production builds and are not part of the production contract.
-
-## Diagrams
-
-### Service Topology
-
-```mermaid
-graph TD
-    Browser -->|":8022"| web-internal["web-internal\n(nginx :8022)"]
-    Browser -->|":8922"| minio["minio\n(:8922 API, :8923 console)"]
-    web-internal -->|static assets| web_dist[(web_dist volume)]
-    web-builder -->|"cp dist/*"| web_dist
-    web-internal -->|proxy /api/| web-api["web-api\n(Fastify :3000)"]
-    web-api --> postgres[("postgres\n(:5432)")]
-    web-api --> minio
-    worker["worker"] --> postgres
-    worker --> minio
-    worker -->|"POST /process"| media-server["media-server\n(:3100)"]
-    media-server --> minio
-    media-server -->|optional progress callback| web-api
-    worker -->|Deepgram API| deepgram((Deepgram))
-    worker -->|Groq API| groq((Groq))
-    migrate["migrate\n(one-shot)"] --> postgres
-    minio-setup["minio-setup\n(one-shot)"] --> minio
-```
-
-### Job State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> queued : enqueue
-    queued --> leased : claimOne (SKIP LOCKED)
-    leased --> running : markRunning
-    running --> succeeded : ack
-    running --> leased : fail (retry budget remaining)
-    running --> dead : fail (budget exhausted or fatal)
-    dead --> queued : enqueueDownstream reset
-    queued --> cancelled : external delete
-    leased --> cancelled : external delete
-    running --> cancelled : external delete
-```
-
-### Upload Sequence
-
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant A as web-api
-    participant M as MinIO
-    participant W as Worker
-    participant MS as media-server
-    participant DG as Deepgram
-    participant GR as Groq
-
-    B->>A: POST /api/videos (Idempotency-Key)
-    A-->>B: { videoId, uploadId }
-
-    B->>A: POST /api/uploads/signed (Idempotency-Key)
-    A-->>B: { putUrl }
-
-    B->>M: PUT <putUrl> (raw bytes)
-    M-->>B: 200 OK
-
-    B->>A: POST /api/uploads/complete (Idempotency-Key)
-    A->>A: enqueue process_video
-    A-->>B: 200 OK
-
-    W->>A: (polling job_queue via DB)
-    W->>MS: POST /process
-    MS->>M: download raw upload
-    MS->>MS: FFmpeg transcode
-    MS->>M: upload processed MP4 + HLS + thumbnail
-    MS-->>W: { status: complete }
-
-    W->>W: enqueue transcribe_video
-    W->>M: download audio
-    W->>DG: transcribe (diarize=true)
-    DG-->>W: segments + speaker data
-    W->>A: (update transcripts table via DB)
-
-    W->>W: enqueue generate_ai
-    W->>GR: title/summary/chapters/entities
-    GR-->>W: structured JSON
-    W->>A: (update ai_outputs table via DB)
-
-    W->>W: enqueue cleanup_artifacts
-    W->>M: delete temp objects
-
-    B->>A: GET /api/videos/:id/status
-    A-->>B: { phase: complete, transcription, ai, ... }
-```
-
-## Frontend Serving
-
-The production-style Compose flow does not run Vite as a long-lived container. Instead:
-
-- `web-builder` copies the built frontend into the shared `web_dist` volume
-- `web-internal` serves those static assets through nginx on port `8022`
-
-For package-level frontend development, use the app-local tooling in `apps/web`.
+That split is important: media processing can be complete while transcription/AI are still running.

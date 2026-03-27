@@ -1,65 +1,33 @@
----
-title: "Master Plan"
-description: "High-level synthesis of the project and its current state"
----
+# Improvement plan
 
-# cap5 — Master Plan
+## 1. Security baseline
 
-**Status:** Current-state reference
-**Last reviewed:** 2026-03-24
+- Add authentication and authorization
+- Sign outbound webhooks
+- Centralize outbound request policy to reduce SSRF risk beyond create-time validation
+- Review MinIO exposure defaults
 
-This document is not a feature backlog. For current technical contracts, use:
+## 2. Queue and workflow resilience
 
-- [API reference](api.md)
-- [Architecture](architecture.md)
-- [Database schema](database.md)
-- [Environment variables](environment.md)
-- [Local development](local-dev.md)
-- [Deployment](deployment.md)
+- Cover all handlers with integration tests around retries, reclaim, and dead-letter transitions
+- Expose queue/admin observability endpoints or dashboards
+- Decide whether `WORKER_CLAIM_BATCH_SIZE` should be used or removed
 
----
+## 3. API/product coherence
 
-## Current State
+- Standardize naming from `cap4` to `cap5` across env defaults, bucket names, docs, and UI copy
+- Decide whether `source_type` support for `processed_mp4` / `hls` is real roadmap or dead schema surface
+- Document or implement notes persistence explicitly
 
-cap5 is a single-tenant video processing platform with:
+## 4. Frontend quality
 
-- React watch app
-- Fastify API
-- PostgreSQL-backed job queue
-- background worker
-- FFmpeg media-server
-- S3-compatible object storage
+- Expand E2E coverage for recording, retry, delete, transcript edits, and speaker labels
+- Add error-state UX for dead jobs and webhook/provider degradation
+- Reduce duplication between summary/transcript variants where useful
 
-Current repo state:
+## 5. Deployment readiness
 
-- upload -> process -> transcript -> AI summary flow is implemented
-- recordings auto-upload after capture; file selections remain explicit upload actions
-- custom video controls, transcript search, confidence review, command palette, speaker diarization, editable speaker labels, and summary enrichments are shipped
-- the checked-in Docker Compose stack is self-bootstrapping via the `migrate` service
-- GitHub Actions is consolidated into one authoritative workflow at `.github/workflows/test.yml`
-- the repo has no end-user authentication layer; auth is out of scope for the current state
-
-Current validation commands:
-
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm build`
-- `pnpm test`
-- `pnpm --filter @cap/web test:e2e`
-- `pnpm --filter @cap/web-api test:e2e`
-- `pnpm db:migrate`
-- `make smoke` against a running stack
-
----
-
-## Current System Shape
-
-- `web-api` owns HTTP routes, health/readiness, idempotency, and queue enqueue paths
-- `worker` claims `job_queue` work with PostgreSQL leasing and calls Deepgram, Groq, and `media-server`
-- `media-server` exposes `/health` and `/process`; the mainline worker path calls it synchronously
-- `webhook` terminology is split:
-  - incoming media progress route: `POST /api/webhooks/media-server/progress`
-  - outgoing user callbacks: `deliver_webhook` jobs to `videos.webhook_url`
-- frontend assets are built by `web-builder` and served by nginx in `web-internal`
-
-For the detailed contract, use [architecture.md](architecture.md), [api.md](api.md), and [database.md](database.md).
+- Add real production topology docs
+- Add secrets management guidance
+- Add health/metrics/log aggregation guidance
+- Add storage lifecycle/cleanup policy docs
