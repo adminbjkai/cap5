@@ -1,0 +1,173 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    # container_name: cap4-postgres
+    restart: unless-stopped
+    # SECURITY: No default credentials - must be provided via environment
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-cap4}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-cap4}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Runs all pending SQL migrations once on every stack startup.
+  # web-api and worker wait for this to complete before starting.
+  migrate:
+    image: postgres:16-alpine
+    # container_name: cap4-migrate
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ./db/migrations:/migrations:ro
+      - ./docker/postgres/run-migrations.sh:/run-migrations.sh:ro
+    entrypoint: [ "sh", "/run-migrations.sh" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    # container_name: cap4-minio
+    restart: unless-stopped
+    # Console always binds to 9001 inside the container; host port is controlled by MINIO_CONSOLE_PORT.
+    command: server /data --console-address ":9001"
+    # SECURITY: No default credentials - must be provided via environment
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "${MINIO_PORT:-8922}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-8923}:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-setup:
+    image: minio/mc:RELEASE.2025-01-17T23-25-50Z
+    # container_name: cap4-minio-setup
+    depends_on:
+      - minio
+    volumes:
+      - ./docker/minio/cors.json:/config/cors.json:ro
+    entrypoint: >
+      /bin/sh -c " until mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minio} ${MINIO_ROOT_PASSWORD:-minio123}; do sleep 1; done && mc mb -p local/${S3_BUCKET:-cap4} || true && mc anonymous set public local/${S3_BUCKET:-cap4} || true && mc cors set local/${S3_BUCKET:-cap4} /config/cors.json || true "
+
+  web-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cap4-web-api:prod
+    # container_name: cap4-web-api
+    restart: unless-stopped
+    command: pnpm --filter @cap/web-api start
+    env_file:
+      - .env
+    environment:
+      CI: "1"
+      NODE_ENV: production
+      # SECURITY: DATABASE_URL must be provided via environment - no default credentials
+      DATABASE_URL: ${DATABASE_URL}
+      WEB_API_PORT: 3000
+      MEDIA_SERVER_BASE_URL: http://media-server:3100
+    ports:
+      - "${WEB_API_PORT:-3000}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      minio-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cap4-worker:prod
+    # container_name: cap4-worker
+    restart: unless-stopped
+    command: pnpm --filter @cap/worker start
+    env_file:
+      - .env
+    environment:
+      CI: "1"
+      NODE_ENV: production
+      # SECURITY: DATABASE_URL must be provided via environment - no default credentials
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  media-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cap4-media-server:prod
+    # container_name: cap4-media-server
+    restart: unless-stopped
+    command: pnpm --filter @cap/media-server start
+    env_file:
+      - .env
+    environment:
+      CI: "1"
+      NODE_ENV: production
+      MEDIA_SERVER_PORT: 3100
+    ports:
+      - "${MEDIA_SERVER_PORT:-3100}:3100"
+    depends_on:
+      web-api:
+        condition: service_healthy
+
+  web-internal:
+    image: nginx:alpine
+    # container_name: cap4-web-internal
+    restart: unless-stopped
+    ports:
+      - "8022:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - web_dist:/usr/share/nginx/html:ro
+    depends_on:
+      web-api:
+        condition: service_healthy
+
+  web-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cap4-web-builder:prod
+    # container_name: cap4-web-builder
+    command: [ "sh", "-c", "cp -rv /workspace/apps/web/dist/* /dist/" ]
+    volumes:
+      - web_dist:/dist
+
+    # Resource limits to prevent resource exhaustion attacks
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+
+volumes:
+  postgres_data:
+  minio_data:
+  web_dist:

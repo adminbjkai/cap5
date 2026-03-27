@@ -1,0 +1,36 @@
+{
+  "name": "@cap/web-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "pnpm -w build:internal",
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node --enable-source-maps dist/index.js",
+    "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.997.0",
+    "@aws-sdk/s3-request-presigner": "^3.997.0",
+    "@cap/config": "workspace:*",
+    "@cap/db": "workspace:*",
+    "@cap/logger": "workspace:*",
+    "@fastify/rate-limit": "^10.3.0",
+    "fastify": "^5.8.1",
+    "fastify-plugin": "^5.1.0",
+    "fastify-raw-body": "^5.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "dotenv": "^17.3.1",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.18"
+  }
+}
