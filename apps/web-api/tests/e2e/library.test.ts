@@ -18,7 +18,7 @@ test.use({
 
 test.describe('Library API', () => {
   // Create multiple videos for pagination testing
-  test.beforeAll(async ({ request }) => {
+  test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
     await ensureAuthenticated(request);
     const videoNames = ['Video 1', 'Video 2', 'Video 3'];

@@ -19,7 +19,7 @@ test.use({
 });
 
 test.describe('Videos API', () => {
-  test.beforeAll(async ({ request }) => {
+  test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
     await ensureAuthenticated(request);
   });

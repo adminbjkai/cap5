@@ -17,7 +17,7 @@ test.use({
 test.describe('Jobs API', () => {
   let jobId: number;
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
     await ensureAuthenticated(request);
     // Create a video and complete upload to generate a job
