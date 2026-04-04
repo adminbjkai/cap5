@@ -185,7 +185,7 @@ test.describe('Library API', () => {
     });
 
     // Get library
-    const libraryResponse = await request.get(`${BASE_URL}/api/library/videos?limit=100`);
+    const libraryResponse = await request.get(`${BASE_URL}/api/library/videos?limit=50`);
     expect(libraryResponse.status()).toBe(200);
     const libraryBody = await libraryResponse.json();
 
