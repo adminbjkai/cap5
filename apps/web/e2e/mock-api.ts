@@ -114,6 +114,24 @@ export const MOCK_LIBRARY = {
 
 /** Install route mocks for all API calls the app makes */
 export async function mockApiRoutes(page: Page) {
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ userId: "e2e-user", email: "e2e@cap5.local" }),
+    })
+  );
+  await page.route("**/api/auth/status", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ setupRequired: false }) })
+  );
+  await page.route("**/api/auth/login", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true }) })
+  );
+  await page.route("**/api/auth/setup", (route) =>
+    route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ ok: true }) })
+  );
+  await page.route("**/api/auth/logout", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify({ ok: true }) })
+  );
   await page.route(`**/api/videos/${MOCK_VIDEO_ID}/status`, (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_VIDEO_STATUS) })
   );

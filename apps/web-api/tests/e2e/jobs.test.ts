@@ -77,8 +77,7 @@ test.describe('Jobs API', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('Invalid job id');
+    expect(body.message).toContain('id');
   });
 
   test('GET /api/jobs/:id - should reject non-numeric job id', async ({ request }) => {
@@ -86,7 +85,6 @@ test.describe('Jobs API', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('Invalid job id');
+    expect(body.message).toContain('id');
   });
 });

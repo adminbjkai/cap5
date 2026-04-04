@@ -204,6 +204,7 @@ jobs:
         ports:
           - 5432:5432
     env:
+      NODE_ENV: test
       DATABASE_URL: postgres://cap5:cap5_test@localhost:5432/cap5_test
       WEB_API_PORT: 3000
       JWT_SECRET: test-jwt-secret-with-32-plus-chars
