@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'crypto';
-import { API_BASE as BASE_URL, assertApiHealthy } from './helpers';
+import { API_BASE as BASE_URL, assertApiHealthy, ensureAuthenticated } from './helpers';
 
 /**
  * E2E tests for videos.ts routes:
@@ -21,6 +21,7 @@ test.use({
 test.describe('Videos API', () => {
   test.beforeAll(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
   });
 
   test('POST /api/videos - should create a new video', async ({ request }) => {

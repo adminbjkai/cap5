@@ -9,7 +9,7 @@ loadEnv({ path: resolve(__dirname, '../../.env') });
 const apiPort = Number(process.env.WEB_API_PORT || 3000);
 
 /**
- * Playwright E2E test configuration for CAP4 API endpoints.
+ * Playwright E2E test configuration for CAP5 API endpoints.
  *
  * Run with:
  *   pnpm --filter @cap/web-api test:e2e

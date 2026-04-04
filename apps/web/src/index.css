@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CAP4 DESIGN TOKENS
+   CAP5 DESIGN TOKENS
    All colors, spacing, and motion values live here as CSS custom properties.
    Components consume these via Tailwind utility classes (mapped in
    tailwind.config.cjs) or directly via var(--…).

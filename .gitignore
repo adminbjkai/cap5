@@ -1,5 +1,5 @@
 # ==========================================
-# CAP4 — Git Ignore
+# CAP5 — Git Ignore
 # ==========================================
 
 # Dependencies
@@ -83,7 +83,7 @@ apps/media-server/uploads/
 apps/worker/tmp/
 
 # ==========================================
-# CAP4 — files not for the public repo
+# CAP5 — files not for the public repo
 # ==========================================
 
 # AI agent audit artifacts
@@ -99,6 +99,7 @@ bykimi.md
 cap4_new/
 cap4/
 Cap_for_reference_only/
+nanobanana/
 
 # npm lockfile (project uses pnpm)
 package-lock.json

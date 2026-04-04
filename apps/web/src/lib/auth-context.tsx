@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = await getAuthMe();
         setUser({ userId: me.userId, email: me.email });
         setAuthenticated(true);
-      } catch (err) {
+      } catch {
         // Not authenticated — check if setup is needed
         try {
           const status = await getAuthStatus();
@@ -64,9 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try {
       await apiLogout();
-    } catch (err) {
+    } catch (error) {
       // Log the error but proceed with local logout anyway
-      console.warn('Logout API call failed:', err);
+      console.warn('Logout API call failed:', error);
     } finally {
       // Always clear local state regardless of API success
       setUser(null);

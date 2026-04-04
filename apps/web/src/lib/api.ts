@@ -435,12 +435,7 @@ export type AuthLoginResponse = { ok: boolean; token: string; expiresIn: string 
 export type AuthSetupResponse = { ok: boolean; userId: string };
 
 export async function getAuthStatus(): Promise<AuthStatusResponse> {
-  try {
-    return await fetcher<AuthStatusResponse>("/api/auth/status");
-  } catch (err) {
-    // Re-throw to allow caller to handle
-    throw err;
-  }
+  return fetcher<AuthStatusResponse>("/api/auth/status");
 }
 
 export async function authLogin(email: string, password: string): Promise<AuthLoginResponse> {
@@ -484,10 +479,5 @@ export async function authLogout(): Promise<{ ok: boolean }> {
 }
 
 export async function getAuthMe(): Promise<AuthMeResponse> {
-  try {
-    return await fetcher<AuthMeResponse>("/api/auth/me");
-  } catch (err) {
-    // Re-throw to allow caller to handle
-    throw err;
-  }
+  return fetcher<AuthMeResponse>("/api/auth/me");
 }

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'crypto';
 import { createHmac } from 'crypto';
-import { API_BASE as BASE_URL, assertApiHealthy } from './helpers';
+import { API_BASE as BASE_URL, assertApiHealthy, ensureAuthenticated } from './helpers';
 
 /**
  * E2E tests for webhooks.ts routes:
@@ -39,6 +39,7 @@ test.describe('Webhooks API', () => {
 
   test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
     // Create a video for testing
     const createResponse = await request.post(`${BASE_URL}/api/videos`, {
       headers: {

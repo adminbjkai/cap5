@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'crypto';
-import { API_BASE as BASE_URL, assertApiHealthy } from './helpers';
+import { API_BASE as BASE_URL, assertApiHealthy, ensureAuthenticated } from './helpers';
 
 /**
  * E2E tests for library.ts routes:
@@ -20,6 +20,7 @@ test.describe('Library API', () => {
   // Create multiple videos for pagination testing
   test.beforeAll(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
     const videoNames = ['Video 1', 'Video 2', 'Video 3'];
 
     for (const name of videoNames) {

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'crypto';
-import { API_BASE as BASE_URL, assertApiHealthy } from './helpers';
+import { API_BASE as BASE_URL, assertApiHealthy, ensureAuthenticated } from './helpers';
 
 /**
  * E2E tests for jobs.ts routes:
@@ -19,6 +19,7 @@ test.describe('Jobs API', () => {
 
   test.beforeAll(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
     // Create a video and complete upload to generate a job
     const createResponse = await request.post(`${BASE_URL}/api/videos`, {
       headers: {
