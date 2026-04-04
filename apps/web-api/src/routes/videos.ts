@@ -18,6 +18,7 @@ import {
 } from "../types/schemas.js";
 import {
   badRequest,
+  requireAuth,
   sha256Hex,
   requireIdempotencyKey,
   idempotencyBegin,
@@ -28,7 +29,8 @@ import {
   structuredActionItemsFromJson,
   structuredChaptersFromJson,
   structuredEntitiesFromJson,
-  structuredQuotesFromJson
+  structuredQuotesFromJson,
+  buildPublicObjectUrl
 } from "../lib/shared.js";
 
 const env = getEnv();
@@ -85,6 +87,8 @@ export async function videoRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { name?: string; webhookUrl?: string } }>("/api/videos", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const idempotencyKey = requireIdempotencyKeyOrReply(reply, req.headers as Record<string, unknown>);
     if (!idempotencyKey) return;
 
@@ -153,6 +157,8 @@ export async function videoRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.get<{ Params: { id: string } }>("/api/videos/:id/status", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const videoId = req.params.id;
     const result = await query<{
       id: string;
@@ -250,6 +256,8 @@ export async function videoRoutes(app: FastifyInstance) {
       processingProgress: row.processing_progress,
       resultKey: row.result_key,
       thumbnailKey: row.thumbnail_key,
+      resultUrl: buildPublicObjectUrl(row.result_key),
+      thumbnailUrl: buildPublicObjectUrl(row.thumbnail_key),
       errorMessage: row.error_message,
       transcriptionStatus: row.transcription_status,
       aiStatus: row.ai_status,
@@ -295,6 +303,8 @@ export async function videoRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.patch<{ Params: { id: string }; Body: { title?: string | null; transcriptText?: string | null; speakerLabels?: Record<string, string> | null } }>("/api/videos/:id/watch-edits", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const { id: videoId } = parseParams(VideoIdParamSchema, req.params);
     const idempotencyKey = requireIdempotencyKeyOrReply(reply, req.headers as Record<string, unknown>);
     if (!idempotencyKey) return;
@@ -421,6 +431,8 @@ export async function videoRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Params: { id: string } }>("/api/videos/:id/delete", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const videoId = req.params.id;
     const idempotencyKey = requireIdempotencyKeyOrReply(reply, req.headers as Record<string, unknown>);
     if (!idempotencyKey) return;
@@ -494,6 +506,8 @@ export async function videoRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Params: { id: string } }>("/api/videos/:id/retry", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const videoId = req.params.id;
     const idempotencyKey = requireIdempotencyKeyOrReply(reply, req.headers as Record<string, unknown>);
     if (!idempotencyKey) return;

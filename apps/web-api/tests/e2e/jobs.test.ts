@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'crypto';
-import { API_BASE as BASE_URL, assertApiHealthy } from './helpers';
+import { API_BASE as BASE_URL, assertApiHealthy, ensureAuthenticated } from './helpers';
 
 /**
  * E2E tests for jobs.ts routes:
@@ -17,8 +17,9 @@ test.use({
 test.describe('Jobs API', () => {
   let jobId: number;
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
     // Create a video and complete upload to generate a job
     const createResponse = await request.post(`${BASE_URL}/api/videos`, {
       headers: {
@@ -76,8 +77,7 @@ test.describe('Jobs API', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('Invalid job id');
+    expect(body.message).toContain('id');
   });
 
   test('GET /api/jobs/:id - should reject non-numeric job id', async ({ request }) => {
@@ -85,7 +85,6 @@ test.describe('Jobs API', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('Invalid job id');
+    expect(body.message).toContain('id');
   });
 });

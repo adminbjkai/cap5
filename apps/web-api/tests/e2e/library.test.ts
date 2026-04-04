@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'crypto';
-import { API_BASE as BASE_URL, assertApiHealthy } from './helpers';
+import { API_BASE as BASE_URL, assertApiHealthy, ensureAuthenticated } from './helpers';
 
 /**
  * E2E tests for library.ts routes:
@@ -18,8 +18,9 @@ test.use({
 
 test.describe('Library API', () => {
   // Create multiple videos for pagination testing
-  test.beforeAll(async ({ request }) => {
+  test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
     const videoNames = ['Video 1', 'Video 2', 'Video 3'];
 
     for (const name of videoNames) {
@@ -69,22 +70,20 @@ test.describe('Library API', () => {
     expect(body.items.length).toBeLessThanOrEqual(limit);
   });
 
-  test('GET /api/library/videos - should cap limit at 50', async ({ request }) => {
+  test('GET /api/library/videos - should reject limit above 50', async ({ request }) => {
     const response = await request.get(`${BASE_URL}/api/library/videos?limit=100`);
 
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(400);
     const body = await response.json();
-
-    expect(body.limit).toBe(50);
+    expect(body.message).toContain('limit');
   });
 
-  test('GET /api/library/videos - should enforce minimum limit of 1', async ({ request }) => {
+  test('GET /api/library/videos - should reject limit below 1', async ({ request }) => {
     const response = await request.get(`${BASE_URL}/api/library/videos?limit=0`);
 
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(400);
     const body = await response.json();
-
-    expect(body.limit).toBe(1);
+    expect(body.message).toContain('limit');
   });
 
   test('GET /api/library/videos - should support created_desc sort (default)', async ({ request }) => {
@@ -157,15 +156,12 @@ test.describe('Library API', () => {
   });
 
   test('GET /api/library/videos - should return null nextCursor when no more items', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/library/videos?limit=1000`);
+    const response = await request.get(`${BASE_URL}/api/library/videos?limit=50`);
 
     expect(response.status()).toBe(200);
     const body = await response.json();
 
-    // If all items fit in one page, nextCursor should be null
-    if (body.items.length < body.limit) {
-      expect(body.nextCursor).toBeNull();
-    }
+    expect(body.nextCursor).toBeNull();
   });
 
   test('GET /api/library/videos - should not return deleted videos', async ({ request }) => {
@@ -189,7 +185,7 @@ test.describe('Library API', () => {
     });
 
     // Get library
-    const libraryResponse = await request.get(`${BASE_URL}/api/library/videos?limit=100`);
+    const libraryResponse = await request.get(`${BASE_URL}/api/library/videos?limit=50`);
     expect(libraryResponse.status()).toBe(200);
     const libraryBody = await libraryResponse.json();
 

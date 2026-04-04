@@ -3,15 +3,14 @@ import { withTransaction } from "@cap/db";
 import type { JobRow } from "../types.js";
 import { ack } from "../queue/index.js";
 import { buildWebVtt } from "../lib/transcript.js";
-import { getObjectBuffer, putObjectBuffer } from "../lib/s3.js";
+import { getObjectBuffer, putObjectBuffer, getS3ClientAndBucket } from "../lib/s3.js";
 import { transcribeWithDeepgram, type TranscriptSegment } from "../providers/deepgram.js";
 import { extractAudio } from "../lib/ffmpeg.js";
-import { log, ensureVideoNotDeleted, enqueueDownstream, payloadString } from "./shared.js";
+import { log, ensureVideoNotDeleted, enqueueDownstream, enqueueWebhookDelivery, payloadString } from "./shared.js";
 
 const env = getEnv();
 
 // Module-level S3 client (initialized once)
-import { getS3ClientAndBucket } from "../lib/s3.js";
 const { client: s3Client, bucket: s3Bucket } = getS3ClientAndBucket();
 
 export async function handleTranscribeVideo(job: JobRow): Promise<void> {
@@ -170,13 +169,7 @@ export async function handleTranscribeVideo(job: JobRow): Promise<void> {
     const aiStatus = row?.ai_status;
 
     if (row?.webhook_url) {
-      await client.query(
-        `INSERT INTO job_queue (video_id, job_type, status, priority, run_after, payload, max_attempts)
-         VALUES ($1::uuid, 'deliver_webhook', 'queued', 10, now(), $2::jsonb, 5)
-         ON CONFLICT (video_id, job_type) WHERE status IN ('queued', 'leased', 'running')
-         DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()`,
-        [job.video_id, JSON.stringify({ webhookUrl: row.webhook_url, event: "video.transcription_complete", videoId: job.video_id })]
-      );
+      await enqueueWebhookDelivery(client, job.video_id, row.webhook_url, "video.transcription_complete");
     }
 
     if (aiStatus !== "queued") {

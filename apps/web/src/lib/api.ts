@@ -46,6 +46,8 @@ export type VideoStatusResponse = {
   processingProgress: number;
   resultKey: string | null;
   thumbnailKey: string | null;
+  resultUrl?: string | null;
+  thumbnailUrl?: string | null;
   errorMessage: string | null;
   transcriptionStatus: string;
   aiStatus: string;
@@ -117,6 +119,7 @@ export type LibraryVideoCard = {
   hasThumbnail: boolean;
   hasResult: boolean;
   thumbnailKey: string | null;
+  thumbnailUrl?: string | null;
   processingPhase: string;
   transcriptionStatus: string;
   aiStatus: string;
@@ -179,7 +182,11 @@ export class ApiError extends Error {
 
 // ── Base fetcher ──────────────────────────────────────────────────────────────
 export async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
+  const res = await fetch(url, {
+    ...options,
+    // Include credentials (cookies) with same-origin requests for auth
+    credentials: 'same-origin',
+  });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new ApiError(res.status, `${res.status} ${res.statusText}: ${body}`);
@@ -418,4 +425,59 @@ export async function uploadMultipart(
   });
 
   return completed.jobId;
+}
+
+// ── Auth API ──────────────────────────────────────────────────────────────
+
+export type AuthStatusResponse = { setupRequired: boolean };
+export type AuthMeResponse = { userId: string; email: string; createdAt: string };
+export type AuthLoginResponse = { ok: boolean; token: string; expiresIn: string };
+export type AuthSetupResponse = { ok: boolean; userId: string };
+
+export async function getAuthStatus(): Promise<AuthStatusResponse> {
+  return fetcher<AuthStatusResponse>("/api/auth/status");
+}
+
+export async function authLogin(email: string, password: string): Promise<AuthLoginResponse> {
+  try {
+    return await fetcher<AuthLoginResponse>("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new Error(`Login failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  }
+}
+
+export async function authSetup(email: string, password: string): Promise<AuthSetupResponse> {
+  try {
+    return await fetcher<AuthSetupResponse>("/api/auth/setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new Error(`Setup failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  }
+}
+
+export async function authLogout(): Promise<{ ok: boolean }> {
+  try {
+    return await fetcher<{ ok: boolean }>("/api/auth/logout", { method: "POST" });
+  } catch (err) {
+    // Log but don't throw for logout — allow graceful degradation
+    console.warn('Logout request failed:', err);
+    return { ok: false };
+  }
+}
+
+export async function getAuthMe(): Promise<AuthMeResponse> {
+  return fetcher<AuthMeResponse>("/api/auth/me");
 }

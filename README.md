@@ -31,7 +31,6 @@ Single-tenant video processing platform for uploading or recording video, normal
 
 ## What is intentionally not here
 
-- no auth / authorization
 - no multi-tenancy
 - no Redis / Kafka
 - no signed outbound webhooks
@@ -81,8 +80,9 @@ That starts:
 | `make down` | Stop the Docker stack |
 | `make logs` | Tail Docker logs |
 | `make migrate` | Run pending DB migrations |
-| `make reset-db` | Recreate the DB from scratch |
+| `make reset-db` | Recreate the DB from scratch (wipes volumes) |
 | `make smoke` | Check `/health` and `/ready` |
+| `make prune` | Remove containers, volumes, orphans, and build cache |
 | `pnpm build:all` | Build shared packages and apps |
 | `pnpm typecheck` | Run TS type checks |
 | `pnpm lint` | Run linting |
@@ -99,7 +99,7 @@ That starts:
 
 ## Where to look next
 
-- [docs/system.md](docs/system.md) — how the system actually works
-- [docs/development.md](docs/development.md) — run, debug, and change the repo
-- [docs/contracts.md](docs/contracts.md) — API/webhook contracts and sensitive rules
+- [docs/system.md](docs/system.md) — runtime topology, architecture decisions, and capacity guidance
+- [docs/development.md](docs/development.md) — run, debug, incident response, and safe repo changes
+- [docs/contracts.md](docs/contracts.md) — API/webhook contracts, versioning stance, and contract changelog
 - [docs/status.md](docs/status.md) — current gaps and next improvement areas

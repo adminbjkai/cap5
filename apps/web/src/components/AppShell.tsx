@@ -7,6 +7,7 @@ import {
   type PropsWithChildren,
   type ReactNode,
 } from 'react';
+import { useAuth } from '../lib/auth-context';
 
 type AppShellProps = PropsWithChildren<{
   overlays?: ReactNode;
@@ -34,6 +35,8 @@ function loadStoredTheme(): 'light' | 'dark' | null {
 
 export function AppShell({ children, overlays }: AppShellProps) {
   const location = useLocation();
+  const auth = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
   const storedTheme = useMemo<'light' | 'dark' | null>(() => {
     return loadStoredTheme();
   }, []);
@@ -53,6 +56,17 @@ export function AppShell({ children, overlays }: AppShellProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>(initialTheme);
   const [hasUserOverride, setHasUserOverride] = useState(Boolean(storedTheme));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await auth.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -107,6 +121,30 @@ export function AppShell({ children, overlays }: AppShellProps) {
       {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
     </>
   );
+
+  const renderThemeIcon = () =>
+    theme === 'light' ? (
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />
+      </svg>
+    ) : (
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+      </svg>
+    );
 
   const navItems = [
     {
@@ -174,15 +212,6 @@ export function AppShell({ children, overlays }: AppShellProps) {
           ))}
         </nav>
 
-        <div className="mt-auto pt-4 border-t">
-          <button
-            onClick={toggleTheme}
-            className="sidebar-link w-full text-left"
-            title={theme === 'light' ? 'Dark mode' : 'Light mode'}
-          >
-            {themeButton}
-          </button>
-        </div>
       </aside>
 
       {/* Mobile Header */}
@@ -202,28 +231,7 @@ export function AppShell({ children, overlays }: AppShellProps) {
             className="btn-secondary px-2.5 py-2 text-xs"
             title={theme === 'light' ? 'Dark mode' : 'Light mode'}
           >
-            {theme === 'light' ? (
-              <svg
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />
-              </svg>
-            ) : (
-              <svg
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-              </svg>
-            )}
+            {renderThemeIcon()}
           </button>
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -267,19 +275,31 @@ export function AppShell({ children, overlays }: AppShellProps) {
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto border-t pt-4">
-          <button
-            onClick={toggleTheme}
-            className="sidebar-link w-full text-left"
-            title={theme === 'light' ? 'Dark mode' : 'Light mode'}
-          >
-            {themeButton}
-          </button>
-        </div>
       </aside>
 
       <main className="app-content min-h-screen pt-16 lg:pt-0">
         <div className="mx-auto w-full max-w-[1720px] px-4 py-8 sm:px-12">
+          <div className="mb-4 hidden items-center justify-between lg:flex">
+            <div className="text-xs text-muted">
+              {auth.user?.email ?? 'Not signed in'}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className="btn-secondary inline-flex items-center gap-2 px-3 py-2 text-xs"
+                title={theme === 'light' ? 'Dark mode' : 'Light mode'}
+              >
+                {themeButton}
+              </button>
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="btn-secondary text-xs px-3 py-2"
+              >
+                {loggingOut ? 'Signing out...' : 'Sign Out'}
+              </button>
+            </div>
+          </div>
           <div key={location.pathname} className="page-transition-enter">
             {children}
           </div>

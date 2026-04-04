@@ -32,6 +32,9 @@ const BaseEnv = z.object({
   S3_SECRET_KEY: z.string().min(1),
   S3_BUCKET: z.string().default("cap5"),
   S3_FORCE_PATH_STYLE: z.string().default("true"),
+  // Auth (optional here so worker/media-server don't crash; web-api validates at runtime)
+  JWT_SECRET: z.string().min(32).optional(),
+  JWT_EXPIRES_IN: z.string().default("7d"),
 });
 
 export type AppEnv = z.infer<typeof BaseEnv>;
@@ -40,35 +43,3 @@ export function getEnv(raw: Record<string, string | undefined> = process.env): A
   return BaseEnv.parse(raw);
 }
 
-/**
- * Parse and validate environment variables. Throws a descriptive error listing
- * all missing/invalid required variables (rather than a raw Zod message).
- */
-export function parse(raw: Record<string, string | undefined> = process.env): AppEnv {
-  const result = BaseEnv.safeParse(raw);
-  if (result.success) {
-    return result.data;
-  }
-
-  const missing: string[] = [];
-  const invalid: string[] = [];
-
-  for (const issue of result.error.issues) {
-    const key = issue.path.join(".");
-    if (issue.code === "invalid_type" && issue.received === "undefined") {
-      missing.push(key);
-    } else {
-      invalid.push(`${key}: ${issue.message}`);
-    }
-  }
-
-  const parts: string[] = ["Environment validation failed."];
-  if (missing.length > 0) {
-    parts.push(`Missing required variables: ${missing.join(", ")}.`);
-  }
-  if (invalid.length > 0) {
-    parts.push(`Invalid variables: ${invalid.join("; ")}.`);
-  }
-
-  throw new Error(parts.join(" "));
-}

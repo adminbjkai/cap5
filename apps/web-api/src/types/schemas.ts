@@ -91,18 +91,3 @@ export const DebugEnqueueJobSchema = z.object({
   maxAttempts: z.number().int().optional(),
 })
 
-// ---------------------------------------------------------------------------
-// Inferred types
-// ---------------------------------------------------------------------------
-
-export type CreateVideoBody = z.infer<typeof CreateVideoSchema>
-export type WatchEditsBody = z.infer<typeof WatchEditsBodySchema>
-export type SignedUploadBody = z.infer<typeof SignedUploadSchema>
-export type UploadCompleteBody = z.infer<typeof UploadCompleteSchema>
-export type MultipartInitiateBody = z.infer<typeof MultipartInitiateSchema>
-export type MultipartPresignPartBody = z.infer<typeof MultipartPresignPartSchema>
-export type MultipartCompleteBody = z.infer<typeof MultipartCompleteSchema>
-export type MultipartAbortBody = z.infer<typeof MultipartAbortSchema>
-export type LibraryQuery = z.infer<typeof LibraryQuerySchema>
-export type DebugCreateVideoBody = z.infer<typeof DebugCreateVideoSchema>
-export type DebugEnqueueJobBody = z.infer<typeof DebugEnqueueJobSchema>

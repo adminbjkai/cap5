@@ -1,10 +1,13 @@
 import Fastify, { type FastifyRequest } from "fastify";
 import rateLimit, { type errorResponseBuilderContext } from "@fastify/rate-limit";
+import cookiePlugin from "@fastify/cookie";
 import rawBody from "fastify-raw-body";
 import { getEnv } from "@cap/config";
 import loggingPlugin from "./plugins/logging.js";
 import healthPlugin from "./plugins/health.js";
+import authPlugin from "./plugins/auth.js";
 import { systemRoutes } from "./routes/system.js";
+import { authRoutes } from "./routes/auth.js";
 import { videoRoutes } from "./routes/videos.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { libraryRoutes } from "./routes/library.js";
@@ -26,28 +29,38 @@ await app.register(healthPlugin, {
   version: '0.1.0',
 });
 
+// Register cookie plugin for auth
+await app.register(cookiePlugin);
+
+// Register auth plugin
+await app.register(authPlugin);
+
 // ---------------------------------------------------------------------------
 // Rate limiting — 100 requests/minute per IP on all routes.
 // Webhooks are excluded because they carry HMAC signatures and are server-to-
 // server calls that can legitimately burst (e.g. progress events).
+// Skip rate limiting in test mode so API E2E covers route behavior without
+// suite request volume becoming the failure mode.
 // ---------------------------------------------------------------------------
-await app.register(rateLimit, {
-  global: true,
-  max: 100,
-  timeWindow: "1 minute",
-  // Use a consistent key regardless of X-Forwarded-For spoofing; nginx always
-  // sets the real IP via proxy_set_header X-Real-IP in production.
-  keyGenerator: (req: FastifyRequest) =>
-    (req.headers["x-real-ip"] as string) ||
-    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-    req.ip,
-  allowList: (req: FastifyRequest) => req.url?.startsWith('/api/webhooks/') ?? false,
-  errorResponseBuilder: (_req: FastifyRequest, context: errorResponseBuilderContext) => ({
-    statusCode: 429,
-    error: "Too Many Requests",
-    message: `Rate limit exceeded. Try again in ${context.after}.`,
-  }),
-});
+if (env.NODE_ENV !== "test") {
+  await app.register(rateLimit, {
+    global: true,
+    max: 100,
+    timeWindow: "1 minute",
+    // Use a consistent key regardless of X-Forwarded-For spoofing; nginx always
+    // sets the real IP via proxy_set_header X-Real-IP in production.
+    keyGenerator: (req: FastifyRequest) =>
+      (req.headers["x-real-ip"] as string) ||
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+      req.ip,
+    allowList: (req: FastifyRequest) => req.url?.startsWith('/api/webhooks/') ?? false,
+    errorResponseBuilder: (_req: FastifyRequest, context: errorResponseBuilderContext) => ({
+      statusCode: 429,
+      error: "Too Many Requests",
+      message: `Rate limit exceeded. Try again in ${context.after}.`,
+    }),
+  });
+}
 
 // rawBody needed by the webhook route (registered with global: false so it
 // only runs on routes that opt in via { config: { rawBody: true } }).
@@ -63,6 +76,7 @@ await app.register(rawBody, {
 // ---------------------------------------------------------------------------
 
 await app.register(systemRoutes);
+await app.register(authRoutes);
 await app.register(videoRoutes);
 await app.register(uploadRoutes);
 await app.register(libraryRoutes);

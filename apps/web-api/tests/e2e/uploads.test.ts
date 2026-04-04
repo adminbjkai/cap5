@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'crypto';
-import { API_BASE as BASE_URL, assertApiHealthy } from './helpers';
+import { API_BASE as BASE_URL, assertApiHealthy, ensureAuthenticated } from './helpers';
 
 /**
  * E2E tests for uploads.ts routes:
@@ -38,6 +38,7 @@ test.describe('Uploads API - Singlepart', () => {
 
   test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
     // Create a video for each test
     const response = await request.post(`${BASE_URL}/api/videos`, {
       headers: {
@@ -102,8 +103,7 @@ test.describe('Uploads API - Singlepart', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('videoId is required');
+    expect(body.message).toContain('videoId');
   });
 
   test('POST /api/uploads/signed - should return 404 for non-existent video', async ({ request }) => {
@@ -227,8 +227,7 @@ test.describe('Uploads API - Singlepart', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('videoId is required');
+    expect(body.message).toContain('videoId');
   });
 });
 
@@ -237,6 +236,7 @@ test.describe('Uploads API - Multipart', () => {
 
   test.beforeEach(async ({ request }) => {
     await assertApiHealthy(request);
+    await ensureAuthenticated(request);
     // Create a video for each test
     const response = await request.post(`${BASE_URL}/api/videos`, {
       headers: {
@@ -302,8 +302,7 @@ test.describe('Uploads API - Multipart', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('contentType are required');
+    expect(body.message).toContain('contentType');
   });
 
   test('POST /api/uploads/multipart/presign-part - should return presigned URL for part', async ({ request }) => {
@@ -356,8 +355,7 @@ test.describe('Uploads API - Multipart', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('partNumber are required');
+    expect(body.message).toContain('partNumber');
   });
 
   test('POST /api/uploads/multipart/presign-part - should return 404 without initiated upload', async ({ request }) => {
@@ -463,8 +461,7 @@ test.describe('Uploads API - Multipart', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('parts array are required');
+    expect(body.message).toContain('parts');
   });
 
   test('POST /api/uploads/multipart/abort - should abort multipart upload', async ({ request }) => {
@@ -508,8 +505,7 @@ test.describe('Uploads API - Multipart', () => {
 
     expect(response.status()).toBe(400);
     const body = await response.json();
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain('videoId is required');
+    expect(body.message).toContain('videoId');
   });
 
   test('POST /api/uploads/multipart/abort - should return 404 without initiated upload', async ({ request }) => {

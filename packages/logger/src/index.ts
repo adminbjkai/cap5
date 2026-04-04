@@ -172,27 +172,5 @@ export function createLogger(nameOrConfig: string | LoggerConfig, options?: Part
 // Default request ID header
 export const REQUEST_ID_HEADER = 'x-request-id';
 
-// AsyncLocalStorage for request context (Node.js 14.8+)
-import { AsyncLocalStorage } from 'async_hooks';
-
-interface RequestStore {
-  requestId: string;
-  logger: Logger;
-}
-
-const asyncLocalStorage = new AsyncLocalStorage<RequestStore>();
-
-export function runWithRequestContext<T>(
-  requestId: string,
-  logger: Logger,
-  fn: () => T
-): T {
-  return asyncLocalStorage.run({ requestId, logger }, fn);
-}
-
-export function getRequestContext(): RequestStore | undefined {
-  return asyncLocalStorage.getStore();
-}
-
 export { pino };
 export default Logger;

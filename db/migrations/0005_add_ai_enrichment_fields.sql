@@ -9,14 +9,20 @@ ALTER TABLE ai_outputs
   ADD COLUMN IF NOT EXISTS action_items_json JSONB DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS quotes_json JSONB DEFAULT '[]'::jsonb;
 
--- Add constraints to ensure arrays
-ALTER TABLE ai_outputs
-  ADD CONSTRAINT chk_ai_outputs_action_items_array
-    CHECK (action_items_json IS NULL OR jsonb_typeof(action_items_json) = 'array');
+-- Add constraints to ensure arrays (idempotent via DO blocks)
+DO $$ BEGIN
+  ALTER TABLE ai_outputs
+    ADD CONSTRAINT chk_ai_outputs_action_items_array
+      CHECK (action_items_json IS NULL OR jsonb_typeof(action_items_json) = 'array');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE ai_outputs
-  ADD CONSTRAINT chk_ai_outputs_quotes_array
-    CHECK (quotes_json IS NULL OR jsonb_typeof(quotes_json) = 'array');
+DO $$ BEGIN
+  ALTER TABLE ai_outputs
+    ADD CONSTRAINT chk_ai_outputs_quotes_array
+      CHECK (quotes_json IS NULL OR jsonb_typeof(quotes_json) = 'array');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Add comment for documentation
 COMMENT ON COLUMN ai_outputs.entities_json IS 'Named entities: people, organizations, locations, dates';

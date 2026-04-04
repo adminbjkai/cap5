@@ -17,7 +17,6 @@ What works:
 What is still rough:
 
 - outbound webhooks are unsigned
-- no auth / authz
 - no real production deployment story beyond Compose
 - no active HLS path despite schema hints
 
@@ -38,12 +37,13 @@ Highest-risk gaps:
 - outbound webhook delivery behavior
 - full browser recording flow E2E
 - queue reclaim/dead-letter edge cases
+- no checked-in formal load benchmark yet, despite the new capacity guide in `docs/system.md`
 
 ## Next improvement areas
 
 ### 1. Security baseline
 
-- add auth / authorization
+- **auth: implemented** — single-user email/password + JWT, see `docs/auth-plan.md`
 - sign outbound webhooks
 - strengthen outbound request policy beyond current create-time webhook URL checks
 - review MinIO exposure defaults for anything beyond local/dev use

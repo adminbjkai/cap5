@@ -10,7 +10,139 @@ Base URL: `http://localhost:3000`
 - most mutations require `Idempotency-Key`
 - video IDs are UUIDs
 - job IDs are numeric
-- there is no auth layer today
+- all non-system routes require authentication (see Auth section below)
+
+## Authentication
+
+All non-system routes require authentication. System routes (`/health`, `/ready`, `/api/system/*`, `/api/webhooks/*`) remain public.
+
+### `GET /api/auth/status`
+Returns setup status. Public endpoint.
+
+Response:
+```json
+{
+  "setupRequired": true
+}
+```
+
+Behavior:
+- `setupRequired: true` when zero users exist in the database
+- `setupRequired: false` when at least one user has been created
+
+### `POST /api/auth/setup`
+Create the initial account. Public endpoint, only works when zero users exist.
+
+Body:
+```json
+{
+  "email": "user@example.com",
+  "password": "secure-password"
+}
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "userId": "uuid"
+}
+```
+
+Behavior:
+- succeeds only if zero users exist in the database
+- returns 400 if attempted when a user already exists
+- hashes password with bcrypt (cost 12)
+
+### `POST /api/auth/login`
+Authenticate with email and password. Public endpoint.
+
+Body:
+```json
+{
+  "email": "user@example.com",
+  "password": "secure-password"
+}
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "token": "eyJ...",
+  "expiresIn": "7d"
+}
+```
+
+Behavior:
+- returns 401 on invalid email or password
+- sets `cap5_token` as an httpOnly, Secure, SameSite=Strict cookie
+- token is a JWT signed with HS256, valid for 7 days by default
+
+### `POST /api/auth/logout`
+Clear authentication. Public endpoint (idempotent).
+
+Response:
+```json
+{
+  "ok": true
+}
+```
+
+Behavior:
+- clears the `cap5_token` httpOnly cookie
+- always succeeds, even if not authenticated
+
+### `GET /api/auth/me`
+Get authenticated user info. Requires authentication.
+
+Response:
+```json
+{
+  "userId": "uuid",
+  "email": "user@example.com",
+  "createdAt": "2026-04-04T12:30:00Z"
+}
+```
+
+Behavior:
+- requires valid JWT in `Authorization: Bearer <token>` header or `cap5_token` cookie
+- returns 401 if not authenticated
+- returns 500 if user record no longer exists (shouldn't happen in normal operation)
+
+### Authentication headers
+
+Protected routes accept tokens in one of two ways:
+
+1. **Authorization header:**
+   ```
+   Authorization: Bearer eyJ...
+   ```
+
+2. **httpOnly cookie:**
+   ```
+   Cookie: cap5_token=eyJ...
+   ```
+
+The cookie is set by `POST /api/auth/login` and is the browser's automatic transport mechanism.
+
+## Versioning and change policy
+
+- the API is currently unversioned and flat under `/api/...`
+- the `0.1.0` values exposed in health metadata are informational build metadata, not a route-contract guarantee
+- prefer additive changes first: new optional fields, new endpoints, or behavior behind existing tolerant clients
+- if a breaking contract change becomes unavoidable, stage it behind a new route shape or explicit `/api/v2` namespace instead of silently mutating existing consumers
+- keep `Idempotency-Key`, `x-cap-*` inbound webhook headers, and `application/cap5-webhook+json` stable unless there is a deliberate compatibility break
+- update this file whenever an external request, response, header, or webhook behavior changes in a consumer-visible way
+
+## Contract changelog
+
+This is not a release log. It only records consumer-visible API and webhook changes that matter for compatibility.
+
+| Date | Change | Compatibility note |
+|---|---|---|
+| 2026-03-27 | Canonical inbound webhook content type set to `application/cap5-webhook+json`. | Breaking for senders still posting the old media type. |
+| 2026-03-27 | `x-cap-timestamp`, `x-cap-signature`, and `x-cap-delivery-id` retained as the stable inbound webhook header contract. | Compatible; header names did not change during `cap5` normalization. |
 
 ## Health and system
 

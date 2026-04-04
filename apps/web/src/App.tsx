@@ -6,20 +6,24 @@ import { CommandPalette, type CommandPaletteAction } from "./components/CommandP
 import { ShortcutsOverlay } from "./components/ShortcutsOverlay";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { getLibraryVideos, type LibraryVideoCard } from "./lib/api";
+import { AuthProvider, useAuth } from "./lib/auth-context";
 import { HomePage } from "./pages/HomePage";
 import { RecordPage } from "./pages/RecordPage";
 import { VideoPage } from "./pages/VideoPage";
+import { LoginPage } from "./pages/LoginPage";
+import { Spinner } from "./components/ui/Spinner";
 
-export function App() {
+function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const emitEvent = useEventBusEmit();
+  const auth = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [paletteVideos, setPaletteVideos] = useState<LibraryVideoCard[]>([]);
 
   useEffect(() => {
-    if (!paletteOpen) return;
+    if (!paletteOpen || !auth.authenticated) return;
     void (async () => {
       try {
         const response = await getLibraryVideos({ limit: 100, sort: "created_desc" });
@@ -28,7 +32,7 @@ export function App() {
         setPaletteVideos([]);
       }
     })();
-  }, [paletteOpen]);
+  }, [paletteOpen, auth.authenticated]);
 
   const commandActions = useMemo<CommandPaletteAction[]>(() => {
     const baseActions: CommandPaletteAction[] = [
@@ -102,6 +106,20 @@ export function App() {
     setShortcutsOpen(false);
   }, [location.pathname]);
 
+  // Show loading spinner while checking auth
+  if (!auth.checked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-app">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!auth.authenticated) {
+    return <LoginPage />;
+  }
+
   return (
     <AppShell
       overlays={
@@ -118,5 +136,13 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

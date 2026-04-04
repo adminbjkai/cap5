@@ -3,18 +3,19 @@ import type { RailTab } from "./shared";
 
 type VideoRailProps = {
   railTab: RailTab;
-  renderedRailTab: RailTab;
-  outgoingRailTab: RailTab | null;
   onSelectTab: (tab: RailTab) => void;
   renderRailTabContent: (tab: RailTab) => ReactNode;
 };
 
-const TABS: RailTab[] = ["notes", "summary", "transcript"];
+const TABS: Array<{ key: RailTab; label: string }> = [
+  { key: "notes", label: "Notes" },
+  { key: "summary", label: "Summary" },
+  { key: "actions", label: "Actions" },
+  { key: "transcript", label: "Transcript" },
+];
 
 export function VideoRail({
   railTab,
-  renderedRailTab,
-  outgoingRailTab,
   onSelectTab,
   renderRailTabContent,
 }: VideoRailProps) {
@@ -27,22 +28,19 @@ export function VideoRail({
         <div className="rail-tab-bar">
           {TABS.map((tab) => (
             <button
-              key={tab}
+              key={tab.key}
               type="button"
-              onClick={() => onSelectTab(tab)}
-              className={`rail-tab ${railTab === tab ? "rail-tab-active" : ""}`}
+              onClick={() => onSelectTab(tab.key)}
+              className={`rail-tab ${railTab === tab.key ? "rail-tab-active" : ""}`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab.label}
             </button>
           ))}
         </div>
 
         <div className="rail-tab-stack scroll-panel">
-          {outgoingRailTab && (
-            <div className="rail-tab-panel-exit">{renderRailTabContent(outgoingRailTab)}</div>
-          )}
-          <div key={renderedRailTab} className="rail-tab-panel-enter">
-            {renderRailTabContent(renderedRailTab)}
+          <div key={railTab} className="rail-tab-panel-enter">
+            {renderRailTabContent(railTab)}
           </div>
         </div>
       </div>
