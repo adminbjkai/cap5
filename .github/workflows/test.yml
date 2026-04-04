@@ -206,6 +206,7 @@ jobs:
     env:
       DATABASE_URL: postgres://cap5:cap5_test@localhost:5432/cap5_test
       WEB_API_PORT: 3000
+      JWT_SECRET: test-jwt-secret-with-32-plus-chars
       MEDIA_SERVER_WEBHOOK_SECRET: test-webhook-secret-with-32-plus-chars
       DEEPGRAM_API_KEY: test-deepgram
       GROQ_API_KEY: test-groq
