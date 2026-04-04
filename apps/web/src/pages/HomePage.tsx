@@ -263,7 +263,7 @@ export function HomePage() {
                 >
                   {item.thumbnailKey ? (
                     <img
-                      src={buildPublicObjectUrl(item.thumbnailKey)}
+                      src={item.thumbnailUrl ?? buildPublicObjectUrl(item.thumbnailKey)}
                       alt=""
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />

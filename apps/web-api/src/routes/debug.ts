@@ -12,6 +12,7 @@ import type { FastifyInstance } from "fastify";
 import { getEnv } from "@cap/config";
 import { query, withTransaction } from "@cap/db";
 import {
+  requireAuth,
   getInternalS3ClientAndBucket,
   PutObjectCommand,
   type JobType,
@@ -83,7 +84,9 @@ export async function debugRoutes(app: FastifyInstance) {
   // POST /debug/enqueue — quick debug: create video + enqueue job
   // ------------------------------------------------------------------
 
-  app.post("/debug/enqueue", async (_req, reply) => {
+  app.post("/debug/enqueue", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const videoResult = await query<{ id: string }>(
       env.DATABASE_URL,
       `INSERT INTO videos (name, source_type) VALUES ('Debug Queue Video', 'web_mp4') RETURNING id`
@@ -108,6 +111,8 @@ export async function debugRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.get<{ Params: { id: string } }>("/debug/job/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const { id: jobId } = parseParams(JobIdParamSchema, req.params);
 
     const result = await query(
@@ -130,6 +135,8 @@ export async function debugRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { name?: string; sourceType?: "web_mp4" | "processed_mp4" | "hls" } }>("/debug/videos", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const { name, sourceType } = parseBody(DebugCreateVideoSchema, req.body);
 
     const result = await query<{ id: string }>(
@@ -148,6 +155,8 @@ export async function debugRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { videoId: string; jobType: JobType; payload?: Record<string, unknown>; priority?: number; maxAttempts?: number } }>("/debug/jobs/enqueue", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const { videoId, jobType, payload, priority, maxAttempts } = parseBody(DebugEnqueueJobSchema, req.body);
 
     const result = await query<{ id: number; status: string }>(
@@ -169,7 +178,9 @@ export async function debugRoutes(app: FastifyInstance) {
   // POST /debug/smoke — full end-to-end smoke test
   // ------------------------------------------------------------------
 
-  app.post("/debug/smoke", async (_req, reply) => {
+  app.post("/debug/smoke", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     try {
       const mp4 = await generateTestMp4Buffer({ seconds: 2 });
       const { client: s3Client, bucket } = getInternalS3ClientAndBucket();

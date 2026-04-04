@@ -19,6 +19,7 @@ import { upsertRecentSession } from "../lib/sessions";
 import { PlayerCard } from "../components/PlayerCard";
 import { TranscriptCard } from "../components/TranscriptCard";
 import { SummaryCardCompact } from "../components/SummaryCardCompact";
+import { ActionItemsPanel } from "../components/ActionItemsPanel";
 import { ChapterListInline } from "../components/ChapterListInline";
 import { buildPublicObjectUrl } from "../lib/format";
 import { NotesPanel } from "./video-page/NotesPanel";
@@ -66,17 +67,18 @@ export function VideoPage() {
     playbackTimeSeconds, videoDurationSeconds: _videoDurationSeconds, seekRequest,
     copyFeedback, isTitleEditing, titleDraft, isSavingTitle, titleSaveMessage,
     isRetrying, retryMessage, isDeleteDialogOpen, isDeleting, isDeleted, deleteError,
-    isSummaryExpanded, railTab, renderedRailTab, outgoingRailTab,
+    isSummaryExpanded, railTab,
     setStatus, setJobStatus, setLoading, setErrorMessage, setConsecutivePollFailures,
     setLastUpdatedAt, setPlaybackTimeSeconds, setVideoDurationSeconds, setSeekRequest,
     setCopyFeedback, setIsTitleEditing, setTitleDraft, setIsSavingTitle, setTitleSaveMessage,
     setIsRetrying, setRetryMessage, setIsDeleteDialogOpen, setIsDeleting, setIsDeleted,
-    setDeleteError, setIsSummaryExpanded, setRailTab, setRenderedRailTab, setOutgoingRailTab,
+    setDeleteError, setIsSummaryExpanded, setRailTab,
   } = useVideoStore();
 
   /* ── Derived values ──────────────────────────────────────────────────── */
-  const shareableResultUrl = status?.resultKey ? buildPublicObjectUrl(status.resultKey) : null;
-  const videoUrl           = status?.resultKey ? buildPublicObjectUrl(status.resultKey) : null;
+  const shareableResultUrl = status?.resultUrl ?? (status?.resultKey ? buildPublicObjectUrl(status.resultKey) : null);
+  const videoUrl           = status?.resultUrl ?? (status?.resultKey ? buildPublicObjectUrl(status.resultKey) : null);
+  const thumbnailUrl       = status?.thumbnailUrl ?? (status?.thumbnailKey ? buildPublicObjectUrl(status.thumbnailKey) : null);
   const isProcessing       = !hasReachedTerminalState(status);
   const transcriptSegments = useMemo(
     () => status?.transcript?.segments ?? [],
@@ -95,15 +97,6 @@ export function VideoPage() {
     if (!status) return false;
     return status.transcriptionStatus === "failed" || status.aiStatus === "failed";
   }, [status]);
-
-  /* ── Rail tab transition ─────────────────────────────────────────────── */
-  useEffect(() => {
-    if (railTab === renderedRailTab) return;
-    setOutgoingRailTab(renderedRailTab);
-    setRenderedRailTab(railTab);
-    const timeout = window.setTimeout(() => setOutgoingRailTab(null), 180);
-    return () => window.clearTimeout(timeout);
-  }, [railTab, renderedRailTab, setOutgoingRailTab, setRenderedRailTab]);
 
   useEffect(() => { setIsSummaryExpanded(false); }, [videoId, summaryText, setIsSummaryExpanded]);
 
@@ -259,6 +252,15 @@ export function VideoPage() {
         />
       );
     }
+    if (tab === "actions") {
+      return (
+        <ActionItemsPanel
+          aiStatus={status?.aiStatus}
+          aiOutput={status?.aiOutput}
+          errorMessage={status?.aiErrorMessage}
+        />
+      );
+    }
     return (
       <TranscriptCard
         videoId={videoId}
@@ -365,8 +367,8 @@ export function VideoPage() {
             </div>
           ) : (
             <PlayerCard
-              resultKey={status?.resultKey ?? null}
-              thumbnailKey={status?.thumbnailKey ?? null}
+              videoUrl={videoUrl}
+              thumbnailUrl={thumbnailUrl}
               seekRequest={seekRequest}
               onPlaybackTimeChange={setPlaybackTimeSeconds}
               onDurationChange={setVideoDurationSeconds}
@@ -379,8 +381,6 @@ export function VideoPage() {
 
         <VideoRail
           railTab={railTab}
-          renderedRailTab={renderedRailTab}
-          outgoingRailTab={outgoingRailTab}
           onSelectTab={setRailTab}
           renderRailTabContent={renderRailTabContent}
         />

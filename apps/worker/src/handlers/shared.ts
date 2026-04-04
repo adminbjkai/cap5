@@ -152,4 +152,19 @@ export async function enqueueDownstream(
   }
 }
 
+export async function enqueueWebhookDelivery(
+  client: PoolClient,
+  videoId: string,
+  webhookUrl: string,
+  event: string
+): Promise<void> {
+  await client.query(
+    `INSERT INTO job_queue (video_id, job_type, status, priority, run_after, payload, max_attempts)
+     VALUES ($1::uuid, 'deliver_webhook', 'queued', 10, now(), $2::jsonb, 5)
+     ON CONFLICT (video_id, job_type) WHERE status IN ('queued', 'leased', 'running')
+     DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()`,
+    [videoId, JSON.stringify({ webhookUrl, event, videoId })]
+  );
+}
+
 export { ack };

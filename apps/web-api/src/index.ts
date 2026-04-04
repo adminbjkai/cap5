@@ -1,10 +1,13 @@
 import Fastify, { type FastifyRequest } from "fastify";
 import rateLimit, { type errorResponseBuilderContext } from "@fastify/rate-limit";
+import cookiePlugin from "@fastify/cookie";
 import rawBody from "fastify-raw-body";
 import { getEnv } from "@cap/config";
 import loggingPlugin from "./plugins/logging.js";
 import healthPlugin from "./plugins/health.js";
+import authPlugin from "./plugins/auth.js";
 import { systemRoutes } from "./routes/system.js";
+import { authRoutes } from "./routes/auth.js";
 import { videoRoutes } from "./routes/videos.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { libraryRoutes } from "./routes/library.js";
@@ -25,6 +28,12 @@ await app.register(loggingPlugin, {
 await app.register(healthPlugin, {
   version: '0.1.0',
 });
+
+// Register cookie plugin for auth
+await app.register(cookiePlugin);
+
+// Register auth plugin
+await app.register(authPlugin);
 
 // ---------------------------------------------------------------------------
 // Rate limiting — 100 requests/minute per IP on all routes.
@@ -63,6 +72,7 @@ await app.register(rawBody, {
 // ---------------------------------------------------------------------------
 
 await app.register(systemRoutes);
+await app.register(authRoutes);
 await app.register(videoRoutes);
 await app.register(uploadRoutes);
 await app.register(libraryRoutes);

@@ -4,7 +4,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 // values after first call would silently reuse the wrong connection.
 const pools = new Map<string, Pool>();
 
-export function createPool(url: string): Pool {
+function createPool(url: string): Pool {
   return new Pool({
     connectionString: url,
     max: 20,

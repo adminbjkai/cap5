@@ -3,7 +3,7 @@ import { withTransaction } from "@cap/db";
 import type { JobRow } from "../types.js";
 import { ack } from "../queue/index.js";
 import { summarizeWithGroq } from "../providers/groq.js";
-import { log, payloadString, parseTranscriptTextFromSegments } from "./shared.js";
+import { log, payloadString, parseTranscriptTextFromSegments, enqueueWebhookDelivery } from "./shared.js";
 
 const env = getEnv();
 
@@ -184,13 +184,7 @@ export async function handleGenerateAi(job: JobRow): Promise<void> {
 
     const row = updateResult.rows[0];
     if (row?.webhook_url) {
-      await client.query(
-        `INSERT INTO job_queue (video_id, job_type, status, priority, run_after, payload, max_attempts)
-         VALUES ($1::uuid, 'deliver_webhook', 'queued', 10, now(), $2::jsonb, 5)
-         ON CONFLICT (video_id, job_type) WHERE status IN ('queued', 'leased', 'running')
-         DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()`,
-        [job.video_id, JSON.stringify({ webhookUrl: row.webhook_url, event: "video.ai_complete", videoId: job.video_id })]
-      );
+      await enqueueWebhookDelivery(client, job.video_id, row.webhook_url, "video.ai_complete");
     }
 
     await ack(client, job);

@@ -7,6 +7,7 @@ import type { FastifyInstance } from "fastify";
 import { getEnv } from "@cap/config";
 import { query } from "@cap/db";
 
+import { requireAuth } from "../lib/shared.js";
 import { parseParams } from "../plugins/validation.js";
 import { JobIdParamSchema } from "../types/schemas.js";
 
@@ -14,6 +15,8 @@ const env = getEnv();
 
 export async function jobRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>("/api/jobs/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const { id: jobId } = parseParams(JobIdParamSchema, req.params);
 
     const result = await query(

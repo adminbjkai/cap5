@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buildPublicObjectUrl, formatTimestamp } from "../lib/format";
+import { formatTimestamp } from "../lib/format";
 import { CustomVideoControls } from "./CustomVideoControls";
 
 type SeekRequest = { seconds: number; requestId: number };
@@ -22,8 +22,8 @@ const SPEAKER_PALETTE = [
 ];
 
 export function PlayerCard({
-  resultKey,
-  thumbnailKey,
+  videoUrl,
+  thumbnailUrl,
   seekRequest,
   onPlaybackTimeChange,
   onDurationChange,
@@ -31,8 +31,8 @@ export function PlayerCard({
   onSeekToSeconds,
   transcriptSegments,
 }: {
-  resultKey: string | null;
-  thumbnailKey: string | null;
+  videoUrl: string | null;
+  thumbnailUrl: string | null;
   seekRequest: SeekRequest | null;
   onPlaybackTimeChange?: (seconds: number) => void;
   onDurationChange?: (seconds: number) => void;
@@ -67,9 +67,7 @@ export function PlayerCard({
   }, [seekRequest, onPlaybackTimeChange]);
 
   /* ── Derived values ───────────────────────────────────────────────────── */
-  const hasResult   = Boolean(resultKey);
-  const videoUrl    = resultKey    ? buildPublicObjectUrl(resultKey)    : null;
-  const thumbnailUrl = thumbnailKey ? buildPublicObjectUrl(thumbnailKey) : null;
+  const hasResult   = Boolean(videoUrl);
   const timelineChapters = useMemo(
     () => (
       durationSeconds > 0

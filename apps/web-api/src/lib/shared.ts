@@ -4,6 +4,7 @@
  */
 
 import crypto from "node:crypto";
+import type { FastifyRequest, FastifyReply } from "fastify";
 import { getEnv } from "@cap/config";
 import { query } from "@cap/db";
 import { PROCESSING_PHASE_RANK } from "../types/video.js";
@@ -23,8 +24,28 @@ export * from "../types/video.js";
 // Simple helpers
 // ---------------------------------------------------------------------------
 
+export function buildPublicObjectUrl(key: string | null): string | null {
+  if (!key) return null;
+  const endpoint = (process.env.S3_PUBLIC_ENDPOINT ?? "").replace(/\/$/, "");
+  const bucket = process.env.S3_BUCKET ?? "cap5";
+  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
+  return endpoint ? `${endpoint}/${bucket}/${encodedKey}` : `/${bucket}/${encodedKey}`;
+}
+
 export function badRequest(message: string) {
   return { ok: false, error: message };
+}
+
+/**
+ * Returns true if the request is authenticated, false otherwise.
+ * When false, a 401 response has already been sent — caller must return immediately.
+ */
+export function requireAuth(request: FastifyRequest, reply: FastifyReply): boolean {
+  if (!request.authenticated) {
+    reply.code(401).send({ error: 'Unauthorized', message: 'Authentication required' });
+    return false;
+  }
+  return true;
 }
 
 export function phaseRank(phase: string): number | null {

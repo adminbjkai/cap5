@@ -1,1 +1,1 @@
-export type RailTab = "notes" | "summary" | "transcript";
+export type RailTab = "notes" | "summary" | "actions" | "transcript";

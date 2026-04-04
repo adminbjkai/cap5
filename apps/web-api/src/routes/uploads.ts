@@ -23,6 +23,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
   badRequest,
+  requireAuth,
   sha256Hex,
   requireIdempotencyKey,
   idempotencyBegin,
@@ -44,6 +45,8 @@ export async function uploadRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { videoId: string; contentType?: string } }>("/api/uploads/signed", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const idempotencyKey = requireIdempotencyKey(req.headers as Record<string, unknown>);
     if (!idempotencyKey) return reply.code(400).send(badRequest("Missing Idempotency-Key header"));
 
@@ -116,6 +119,8 @@ export async function uploadRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { videoId: string } }>("/api/uploads/complete", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const idempotencyKey = requireIdempotencyKey(req.headers as Record<string, unknown>);
     if (!idempotencyKey) return reply.code(400).send(badRequest("Missing Idempotency-Key header"));
 
@@ -204,6 +209,8 @@ export async function uploadRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { videoId: string; contentType: string } }>("/api/uploads/multipart/initiate", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const idempotencyKey = requireIdempotencyKey(req.headers as Record<string, unknown>);
     if (!idempotencyKey) return reply.code(400).send(badRequest("Missing Idempotency-Key header"));
 
@@ -259,6 +266,8 @@ export async function uploadRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { videoId: string; partNumber: number } }>("/api/uploads/multipart/presign-part", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const idempotencyKey = requireIdempotencyKey(req.headers as Record<string, unknown>);
     if (!idempotencyKey) return reply.code(400).send(badRequest("Missing Idempotency-Key header"));
 
@@ -295,6 +304,8 @@ export async function uploadRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { videoId: string; parts: Array<{ ETag: string; PartNumber: number }> } }>("/api/uploads/multipart/complete", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const idempotencyKey = requireIdempotencyKey(req.headers as Record<string, unknown>);
     if (!idempotencyKey) return reply.code(400).send(badRequest("Missing Idempotency-Key header"));
 
@@ -374,6 +385,8 @@ export async function uploadRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
 
   app.post<{ Body: { videoId: string } }>("/api/uploads/multipart/abort", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const idempotencyKey = requireIdempotencyKey(req.headers as Record<string, unknown>);
     if (!idempotencyKey) return reply.code(400).send(badRequest("Missing Idempotency-Key header"));
 

@@ -8,9 +8,11 @@ import { getEnv } from "@cap/config";
 import { query } from "@cap/db";
 import {
   badRequest,
+  requireAuth,
   encodeLibraryCursor,
   decodeLibraryCursor,
-  normalizeCursorTimestamp
+  normalizeCursorTimestamp,
+  buildPublicObjectUrl
 } from "../lib/shared.js";
 import { parseQuery } from "../plugins/validation.js";
 import { LibraryQuerySchema } from "../types/schemas.js";
@@ -19,6 +21,8 @@ const env = getEnv();
 
 export async function libraryRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { cursor?: string; limit?: string; sort?: string } }>("/api/library/videos", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+
     const q = parseQuery(LibraryQuerySchema, req.query);
     const sort = q.sort ?? "created_desc";
     const limit: number = q.limit ?? 24;
@@ -94,6 +98,7 @@ export async function libraryRoutes(app: FastifyInstance) {
         hasThumbnail: Boolean(row.thumbnail_key),
         hasResult: Boolean(row.result_key),
         thumbnailKey: row.thumbnail_key,
+        thumbnailUrl: buildPublicObjectUrl(row.thumbnail_key),
         processingPhase: row.processing_phase,
         transcriptionStatus: row.transcription_status,
         aiStatus: row.ai_status,

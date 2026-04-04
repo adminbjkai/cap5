@@ -30,8 +30,15 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     volumes:
       - ./db/migrations:/migrations:ro
-      - ./docker/postgres/run-migrations.sh:/run-migrations.sh:ro
-    entrypoint: [ "sh", "/run-migrations.sh" ]
+    entrypoint:
+      - sh
+      - -c
+      - |
+        for f in /migrations/*.sql; do
+          echo "Applying $$f ..."
+          psql "$$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$$f" || exit 1
+        done
+        echo "All migrations applied."
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,6 +84,8 @@ services:
       NODE_ENV: production
       # SECURITY: DATABASE_URL must be provided via environment - no default credentials
       DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       WEB_API_PORT: 3000
       MEDIA_SERVER_BASE_URL: http://media-server:3100
     ports:
