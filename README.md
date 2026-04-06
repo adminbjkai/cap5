@@ -107,3 +107,4 @@ That starts:
 - [docs/contracts.md](docs/contracts.md) — API/webhook contracts, versioning stance, and contract changelog
 - [docs/status.md](docs/status.md) — current gaps and next improvement areas
 - [docs/auth-plan.md](docs/auth-plan.md) — current auth status and constraints
+- [docs/review-auth-system.md](docs/review-auth-system.md) — auth review notes and follow-up suggestions

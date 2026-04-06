@@ -89,7 +89,7 @@ This repo keeps ADR-style records inline instead of maintaining a separate docs 
   - JWT_SECRET required env var, 7-day token lifetime
   - auth plugin decorates requests; route-level guards enforce protection
   - webhooks and health endpoints remain unauthenticated (HMAC for inbound, open for health)
-  - see `docs/auth-plan.md` for full implementation plan
+  - see `docs/auth-plan.md` for current auth status and constraints
 
 ### ADR-005: Runtime naming is canonically `cap5`
 

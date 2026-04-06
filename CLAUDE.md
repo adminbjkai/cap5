@@ -11,6 +11,7 @@ Auth is implemented — see `docs/auth-plan.md` for the current auth status and 
 - `docs/contracts.md` — API/webhook contracts and versioning policy
 - `docs/status.md` — current gaps and next improvement areas
 - `docs/auth-plan.md` — current auth status, constraints, and follow-up items
+- `docs/review-auth-system.md` — auth review notes and follow-up suggestions
 - `docs/cap5_implementation_plan.md` — implementation order and hardening roadmap
 
 ## Source of truth
