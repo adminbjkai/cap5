@@ -19,7 +19,7 @@ Single-tenant video processing platform for uploading or recording video, normal
 - signed single-part and multipart uploads to S3-compatible storage
 - media normalization through the dedicated media server
 - Deepgram transcription with speaker diarization
-- editable transcript text, speaker labels, server-backed operator notes, and speaker-synced playback filtering in the watch UI
+- editable transcript text, speaker labels, server-backed operator notes, and selected-speaker-sequence playback in the watch UI
 - Groq title / summary / chapters / entities / action items / quotes
 - cursor-paginated library
 - soft delete with delayed cleanup job

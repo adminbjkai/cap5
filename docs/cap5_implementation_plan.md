@@ -39,7 +39,7 @@ Completed in the actual repo during this pass:
 - implementation planning and doc cleanup
 - server-backed operator notes feature
 - right-rail tab rendering hardening for cross-browser panel isolation
-- speaker-synced playback filtering feature
+- speaker-synced playback filtering feature refined into selected-speaker-sequence playback
 
 ## Execution principles
 

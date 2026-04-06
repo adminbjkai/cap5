@@ -10,9 +10,10 @@ type TranscriptSegment = {
   speaker?: number | null;
 };
 
-const SKIP_START_PADDING_SECONDS = 0.12;
-const SKIP_END_PADDING_SECONDS = 0.18;
-const PLAYBACK_GUARD_INTERVAL_MS = 50;
+const SEGMENT_START_PADDING_SECONDS = 0.08;
+const SEGMENT_END_PADDING_SECONDS = 0.12;
+const SEGMENT_MERGE_GAP_SECONDS = 0.08;
+const PLAYBACK_GUARD_INTERVAL_MS = 40;
 
 const SPEAKER_PALETTE = [
   "#0ea5e9",
@@ -83,8 +84,8 @@ export function PlayerCard({
         const speaker = Number(segment.speaker);
         if (!Number.isFinite(startSeconds) || !Number.isFinite(endSeconds)) return null;
         if (!Number.isInteger(speaker) || speaker < 0) return null;
-        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds - SKIP_START_PADDING_SECONDS));
-        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds + SKIP_END_PADDING_SECONDS));
+        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds - SEGMENT_START_PADDING_SECONDS));
+        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds + SEGMENT_END_PADDING_SECONDS));
         if (safeEnd <= safeStart) return null;
         return { startSeconds: safeStart, endSeconds: safeEnd, speaker };
       })
@@ -100,13 +101,14 @@ export function PlayerCard({
     }));
   }, [durationSeconds, transcriptSegments]);
 
-  const blockedSpeakerRanges = useMemo(() => {
-    if (durationSeconds <= 0 || hiddenSpeakers.size === 0) return [] as Array<{ startSeconds: number; endSeconds: number }>;
+  const allowedSpeakerRanges = useMemo(() => {
+    if (durationSeconds <= 0) return [] as Array<{ startSeconds: number; endSeconds: number }>;
 
-    const blocked = (Array.isArray(transcriptSegments) ? transcriptSegments : [])
+    const rawSegments = (Array.isArray(transcriptSegments) ? transcriptSegments : [])
       .map((segment) => {
         const speaker = Number(segment.speaker);
-        if (!Number.isInteger(speaker) || !hiddenSpeakers.has(speaker)) return null;
+        if (!Number.isInteger(speaker) || speaker < 0) return null;
+        if (hiddenSpeakers.has(speaker)) return null;
 
         const startSeconds = Number(segment.startSeconds);
         const rawEnd = Number(segment.endSeconds);
@@ -114,8 +116,8 @@ export function PlayerCard({
 
         const fallbackEnd = startSeconds + 0.25;
         const endSeconds = Number.isFinite(rawEnd) ? rawEnd : fallbackEnd;
-        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds - SKIP_START_PADDING_SECONDS));
-        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds + SKIP_END_PADDING_SECONDS));
+        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds - SEGMENT_START_PADDING_SECONDS));
+        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds + SEGMENT_END_PADDING_SECONDS));
         if (safeEnd <= safeStart) return null;
 
         return { startSeconds: safeStart, endSeconds: safeEnd };
@@ -123,46 +125,62 @@ export function PlayerCard({
       .filter((segment): segment is { startSeconds: number; endSeconds: number } => Boolean(segment))
       .sort((a, b) => a.startSeconds - b.startSeconds);
 
-    if (blocked.length <= 1) return blocked;
+    if (rawSegments.length <= 1) return rawSegments;
 
     const merged: Array<{ startSeconds: number; endSeconds: number }> = [];
-    for (const range of blocked) {
+    for (const range of rawSegments) {
       const previous = merged[merged.length - 1];
-      if (!previous || range.startSeconds > previous.endSeconds + 0.05) {
+      if (!previous || range.startSeconds > previous.endSeconds + SEGMENT_MERGE_GAP_SECONDS) {
         merged.push({ ...range });
       } else {
         previous.endSeconds = Math.max(previous.endSeconds, range.endSeconds);
       }
     }
+
     return merged;
   }, [durationSeconds, transcriptSegments, hiddenSpeakers]);
 
-  const ensureAllowedPlaybackPosition = useCallback((candidateSeconds: number): number | null => {
-    if (blockedSpeakerRanges.length === 0) return null;
+  const getNextAllowedPlaybackPosition = useCallback((candidateSeconds: number): number | null => {
+    if (allowedSpeakerRanges.length === 0) return null;
     const current = Math.max(0, candidateSeconds);
 
-    for (const range of blockedSpeakerRanges) {
-      if (current + 0.01 < range.startSeconds) return null;
-      if (current >= range.startSeconds && current < range.endSeconds) {
-        return Math.min(durationSeconds, range.endSeconds + 0.04);
+    for (const range of allowedSpeakerRanges) {
+      if (current < range.startSeconds) {
+        return range.startSeconds;
+      }
+      if (current >= range.startSeconds && current <= range.endSeconds) {
+        return null;
       }
     }
 
     return null;
-  }, [blockedSpeakerRanges, durationSeconds]);
+  }, [allowedSpeakerRanges]);
 
+  const getCurrentAllowedRangeEnd = useCallback((candidateSeconds: number): number | null => {
+    if (allowedSpeakerRanges.length === 0) return null;
+    const current = Math.max(0, candidateSeconds);
+
+    for (const range of allowedSpeakerRanges) {
+      if (current < range.startSeconds) return null;
+      if (current >= range.startSeconds && current <= range.endSeconds) {
+        return range.endSeconds;
+      }
+    }
+
+    return null;
+  }, [allowedSpeakerRanges]);
 
   useEffect(() => {
     const player = videoRef.current;
     if (!player) return;
 
-    const nextAllowed = ensureAllowedPlaybackPosition(player.currentTime);
+    const nextAllowed = getNextAllowedPlaybackPosition(player.currentTime);
     if (nextAllowed === null) return;
 
     player.currentTime = nextAllowed;
     setPlaybackTimeSeconds(nextAllowed);
     onPlaybackTimeChange?.(nextAllowed);
-  }, [hiddenSpeakers, ensureAllowedPlaybackPosition, onPlaybackTimeChange]);
+  }, [hiddenSpeakers, getCurrentAllowedRangeEnd, getNextAllowedPlaybackPosition, onPlaybackTimeChange]);
 
 
   useEffect(() => {
@@ -171,16 +189,20 @@ export function PlayerCard({
 
     const guardPlayback = () => {
       if (player.paused || player.seeking || player.ended) return;
-      const skipTo = ensureAllowedPlaybackPosition(player.currentTime);
-      if (skipTo === null) return;
+
+      const currentTime = player.currentTime;
+      const currentAllowedEnd = getCurrentAllowedRangeEnd(currentTime);
+      const nextAllowed = getNextAllowedPlaybackPosition(currentTime);
+      const shouldAdvance = nextAllowed !== null && (currentAllowedEnd === null || currentTime > currentAllowedEnd - 0.015);
+      if (!shouldAdvance) return;
 
       const lastSkip = lastAutoSkipRef.current;
       const now = Date.now();
-      if (!lastSkip || Math.abs(lastSkip.from - player.currentTime) > 0.03 || Math.abs(lastSkip.to - skipTo) > 0.03 || now - lastSkip.atMs > 250) {
-        lastAutoSkipRef.current = { from: player.currentTime, to: skipTo, atMs: now };
-        player.currentTime = skipTo;
-        setPlaybackTimeSeconds(skipTo);
-        onPlaybackTimeChange?.(skipTo);
+      if (!lastSkip || Math.abs(lastSkip.from - currentTime) > 0.03 || Math.abs(lastSkip.to - nextAllowed) > 0.03 || now - lastSkip.atMs > 200) {
+        lastAutoSkipRef.current = { from: currentTime, to: nextAllowed, atMs: now };
+        player.currentTime = nextAllowed;
+        setPlaybackTimeSeconds(nextAllowed);
+        onPlaybackTimeChange?.(nextAllowed);
       }
     };
 
@@ -195,7 +217,7 @@ export function PlayerCard({
       player.removeEventListener("play", guardPlayback);
       player.removeEventListener("seeked", guardPlayback);
     };
-  }, [hiddenSpeakers, ensureAllowedPlaybackPosition, onPlaybackTimeChange]);
+  }, [hiddenSpeakers, getNextAllowedPlaybackPosition, onPlaybackTimeChange]);
 
   /* ── Seek on external request ─────────────────────────────────────────── */
   useEffect(() => {
@@ -203,11 +225,11 @@ export function PlayerCard({
     const player = videoRef.current;
     if (!player) return;
     const clamped = Math.max(0, seekRequest.seconds);
-    const nextAllowed = ensureAllowedPlaybackPosition(clamped) ?? clamped;
+    const nextAllowed = getNextAllowedPlaybackPosition(clamped) ?? clamped;
     player.currentTime = nextAllowed;
     setPlaybackTimeSeconds(nextAllowed);
     onPlaybackTimeChange?.(nextAllowed);
-  }, [seekRequest, onPlaybackTimeChange, ensureAllowedPlaybackPosition]);
+  }, [seekRequest, onPlaybackTimeChange, getNextAllowedPlaybackPosition]);
 
 
 
@@ -231,13 +253,13 @@ export function PlayerCard({
   /* ── Chapter seek helpers ─────────────────────────────────────────────── */
   const handleChapterSeek = useCallback((seconds: number) => {
     const clamped = Math.max(0, seconds);
-    const nextAllowed = ensureAllowedPlaybackPosition(clamped) ?? clamped;
+    const nextAllowed = getNextAllowedPlaybackPosition(clamped) ?? clamped;
     const player  = videoRef.current;
     if (player) player.currentTime = nextAllowed;
     setPlaybackTimeSeconds(nextAllowed);
     onPlaybackTimeChange?.(nextAllowed);
     onSeekToSeconds(nextAllowed);
-  }, [onPlaybackTimeChange, onSeekToSeconds, ensureAllowedPlaybackPosition]);
+  }, [onPlaybackTimeChange, onSeekToSeconds, getNextAllowedPlaybackPosition]);
 
   const goToPrevChapter = () => {
     if (activeChapterIndex <= 0) return;
@@ -331,16 +353,18 @@ export function PlayerCard({
             onTimeUpdate={(e) => {
               const player = e.currentTarget;
               const time = player.currentTime || 0;
-              const skipTo = ensureAllowedPlaybackPosition(time);
+              const currentAllowedEnd = getCurrentAllowedRangeEnd(time);
+              const nextAllowed = getNextAllowedPlaybackPosition(time);
+              const shouldAdvance = nextAllowed !== null && (currentAllowedEnd === null || time > currentAllowedEnd - 0.015);
 
-              if (skipTo !== null) {
+              if (shouldAdvance) {
                 const lastSkip = lastAutoSkipRef.current;
                 const now = Date.now();
-                if (!lastSkip || Math.abs(lastSkip.from - time) > 0.05 || Math.abs(lastSkip.to - skipTo) > 0.05 || now - lastSkip.atMs > 400) {
-                  lastAutoSkipRef.current = { from: time, to: skipTo, atMs: now };
-                  player.currentTime = skipTo;
-                  setPlaybackTimeSeconds(skipTo);
-                  onPlaybackTimeChange?.(skipTo);
+                if (!lastSkip || Math.abs(lastSkip.from - time) > 0.03 || Math.abs(lastSkip.to - nextAllowed) > 0.03 || now - lastSkip.atMs > 200) {
+                  lastAutoSkipRef.current = { from: time, to: nextAllowed, atMs: now };
+                  player.currentTime = nextAllowed;
+                  setPlaybackTimeSeconds(nextAllowed);
+                  onPlaybackTimeChange?.(nextAllowed);
                   return;
                 }
               }
