@@ -12,9 +12,11 @@ import { z } from 'zod';
 import { getEnv } from '@cap/config';
 import { query } from '@cap/db';
 import { hashPassword, verifyPassword, signToken, parseExpiresIn } from '../lib/auth.js';
+import { InMemoryLoginRateLimiter, getLoginAttemptKey } from '../lib/login-rate-limit.js';
 import { parseBody } from '../plugins/validation.js';
 
 const env = getEnv();
+const loginRateLimiter = new InMemoryLoginRateLimiter();
 
 const LoginSchema = z.object({
   email: z.string().email().min(1),
@@ -25,6 +27,20 @@ const SetupSchema = z.object({
   email: z.string().email().min(1),
   password: z.string().min(8),
 });
+
+function logAuthEvent(
+  app: FastifyInstance,
+  level: "info" | "warn",
+  message: string,
+  fields: Record<string, unknown>
+): void {
+  if (level === "warn") {
+    app.serviceLogger?.warn(message, fields);
+    return;
+  }
+
+  app.serviceLogger?.info(message, fields);
+}
 
 export async function authRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
@@ -88,13 +104,20 @@ export async function authRoutes(app: FastifyInstance) {
   // ------------------------------------------------------------------
   // POST /api/auth/login — authenticate and get token
   // ------------------------------------------------------------------
-  // TODO: Add rate limiting for production to prevent brute force attacks
 
   app.post<{ Body: { email: string; password: string } }>(
     '/api/auth/login',
     async (req, reply) => {
       const body = parseBody(LoginSchema, req.body);
       const email = body.email.toLowerCase();
+      const attemptKey = getLoginAttemptKey(req, email);
+      const gate = loginRateLimiter.check(attemptKey);
+
+      if (!gate.allowed) {
+        reply.header('Retry-After', String(gate.retryAfterSeconds));
+        logAuthEvent(app, 'warn', 'auth.login_rate_limited', { email, ip: req.ip, retryAfterSeconds: gate.retryAfterSeconds });
+        return reply.code(429).send({ error: 'Too many login attempts. Try again later.' });
+      }
 
       // Look up user by email
       const userResult = await query<{ id: string; password_hash: string }>(
@@ -104,6 +127,8 @@ export async function authRoutes(app: FastifyInstance) {
       );
 
       if (userResult.rowCount === 0) {
+        loginRateLimiter.recordFailure(attemptKey);
+        logAuthEvent(app, 'warn', 'auth.login_failed', { email, ip: req.ip, reason: 'user_not_found' });
         return reply.code(401).send({ error: 'Invalid credentials' });
       }
 
@@ -112,8 +137,12 @@ export async function authRoutes(app: FastifyInstance) {
       // Verify password
       const passwordValid = await verifyPassword(body.password, user.password_hash);
       if (!passwordValid) {
+        loginRateLimiter.recordFailure(attemptKey);
+        logAuthEvent(app, 'warn', 'auth.login_failed', { email, ip: req.ip, reason: 'invalid_password', userId: user.id });
         return reply.code(401).send({ error: 'Invalid credentials' });
       }
+
+      loginRateLimiter.clear(attemptKey);
 
       // Sign token
       const token = signToken(user.id);
@@ -127,6 +156,8 @@ export async function authRoutes(app: FastifyInstance) {
         secure: env.NODE_ENV === 'production',
         maxAge: cookieMaxAge,
       });
+
+      logAuthEvent(app, 'info', 'auth.login_succeeded', { email, ip: req.ip, userId: user.id });
 
       return reply.send({
         ok: true,
