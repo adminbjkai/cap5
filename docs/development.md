@@ -112,6 +112,7 @@ Canonical sources:
 | `LOG_LEVEL` | info | trace, debug, info, warn, error |
 | `LOG_PRETTY` | — | Set to `true` for human-readable logs in dev |
 | `WEBHOOK_MAX_SKEW_SECONDS` | 300 | Max timestamp skew for inbound webhooks |
+| `OUTBOUND_WEBHOOK_SECRET` | — | Optional secret for signing outbound user webhooks; falls back to `MEDIA_SERVER_WEBHOOK_SECRET` |
 
 ### Worker tuning
 
@@ -357,7 +358,7 @@ Mitigate:
 
 - fix the sender first; replaying a malformed webhook will not help
 - if progress is already reflected on the video row, do not force duplicate deliveries
-- remember outbound user webhooks are not signed today, so transport/network failures must be diagnosed from delivery behavior and logs
+- outbound user webhooks are signed too; check the raw body plus `x-cap-timestamp`, `x-cap-signature`, and `x-cap-delivery-id` before assuming transport-only failure
 
 ### After stabilization
 

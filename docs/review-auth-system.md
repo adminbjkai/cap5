@@ -16,7 +16,7 @@ None found.
 
 | # | File | Suggestion | Category | Priority |
 |---|------|------------|----------|----------|
-| 1 | routes/auth.ts | Implement rate limiting on /api/auth/login (TODO exists) | Security | High |
+| 1 | routes/auth.ts | Login throttling is now implemented; next step is broader auth observability if desired | Security | High |
 | 2 | plugins/auth.ts | Log token validation failures at debug level | Maintainability | Medium |
 | 3 | auth-context.tsx | Combine /api/auth/me + /api/auth/status into single /api/auth/check endpoint | Performance | Low |
 | 4 | 0007_add_auth.sql | Consider adding last_login_at, last_password_changed_at columns | Maintainability | Low |
@@ -42,7 +42,7 @@ None found.
 ### Backend
 - `apps/web-api/src/lib/auth.ts` — JWT signing, bcrypt, parseExpiresIn (exported)
 - `apps/web-api/src/plugins/auth.ts` — Fastify request decoration
-- `apps/web-api/src/routes/auth.ts` — Auth endpoints with email normalization, rate-limit TODO
+- `apps/web-api/src/routes/auth.ts` — Auth endpoints with email normalization, login throttling, and auth event logging
 - `apps/web-api/src/lib/shared.ts` — Centralized requireAuth helper
 - `apps/web-api/src/routes/videos.ts` — Uses requireAuth
 - `apps/web-api/src/routes/uploads.ts` — Uses requireAuth

@@ -6,6 +6,7 @@ const BaseEnv = z.object({
   LOG_PRETTY: z.string().optional(),
   DATABASE_URL: z.string().min(1),
   MEDIA_SERVER_WEBHOOK_SECRET: z.string().min(32),
+  OUTBOUND_WEBHOOK_SECRET: z.string().min(32).optional(),
   WEBHOOK_MAX_SKEW_SECONDS: z.coerce.number().int().positive().default(300),
   DEEPGRAM_API_KEY: z.string().min(1),
   GROQ_API_KEY: z.string().min(1),
