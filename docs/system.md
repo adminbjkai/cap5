@@ -70,14 +70,14 @@ This repo keeps ADR-style records inline instead of maintaining a separate docs 
   - media-server health directly affects `process_video` throughput
   - scaling media work means scaling worker and media-server deliberately, not just adding API instances
 
-### ADR-003: Inbound progress webhooks are signed; outbound user webhooks are not
+### ADR-003: Webhook signing uses the same HMAC shape inbound and outbound
 
-- Status: accepted, temporary
-- Why: inbound media-server callbacks mutate system state and therefore require HMAC validation, timestamp skew enforcement, delivery dedupe, and monotonic progress guards. Outbound webhooks are useful but are not yet signed.
+- Status: accepted
+- Why: inbound media-server callbacks mutate system state and outbound user webhooks cross a trust boundary, so both should carry timestamped HMAC headers with the same canonical format.
 - Consequences:
-  - inbound progress updates have a strong trust boundary
-  - outbound webhook consumers must currently trust transport only
-  - signed outbound delivery remains an explicit follow-up item
+  - inbound progress updates keep HMAC validation, timestamp skew enforcement, delivery dedupe, and monotonic progress guards
+  - outbound webhook consumers can verify `x-cap-timestamp`, `x-cap-signature`, and `x-cap-delivery-id` against the raw body
+  - operators may separate secrets by setting `OUTBOUND_WEBHOOK_SECRET`; otherwise outbound signing falls back to `MEDIA_SERVER_WEBHOOK_SECRET`
 
 ### ADR-004: Single-user auth with stateless JWT
 
@@ -275,8 +275,8 @@ Worker job: `cleanup_artifacts` (queued by soft delete, delayed 5 minutes)
 Worker job: `deliver_webhook` (max 5 attempts, hardcoded)
 
 - POSTs JSON to `webhookUrl` with `{ event, videoId, phase?, progress?, timestamp }`
+- includes `x-cap-timestamp`, `x-cap-signature`, and `x-cap-delivery-id` headers
 - retries on non-2xx responses
-- no HMAC signing on outbound webhooks today
 
 ### 8. Watch / review
 

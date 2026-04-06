@@ -337,10 +337,17 @@ Current outbound events:
 - `video.transcription_complete`
 - `video.ai_complete`
 
-Important security note:
+Outbound delivery contract:
 
-- outbound webhooks are currently plain JSON POSTs
-- they are **not signed** today
+- method: `POST`
+- content type: `application/json`
+- body: JSON event payload
+- headers:
+  - `x-cap-timestamp`
+  - `x-cap-signature`
+  - `x-cap-delivery-id`
+- signature format: `v1=<hex hmac sha256>` over `${timestamp}.${rawBody}`
+- signing secret: `OUTBOUND_WEBHOOK_SECRET` when set, otherwise `MEDIA_SERVER_WEBHOOK_SECRET`
 
 ## Security-sensitive rules to remember
 

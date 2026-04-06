@@ -16,7 +16,7 @@ What works:
 
 What is still rough:
 
-- outbound webhooks are unsigned
+- outbound webhooks are now HMAC-signed; consumer rollout/testing is the next follow-up
 - no real production deployment story beyond Compose
 - no active HLS path despite schema hints
 
@@ -44,7 +44,7 @@ Highest-risk gaps:
 ### 1. Security baseline
 
 - **auth: implemented** — single-user email/password + JWT, see `docs/auth-plan.md`
-- sign outbound webhooks
+- validate outbound webhook consumer adoption and add delivery-path tests for signed requests
 - strengthen outbound request policy beyond current create-time webhook URL checks
 - review MinIO exposure defaults for anything beyond local/dev use
 

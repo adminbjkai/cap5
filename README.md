@@ -25,15 +25,15 @@ Single-tenant video processing platform for uploading or recording video, normal
 - soft delete with delayed cleanup job
 - retry path for eligible transcription / AI jobs
 - inbound HMAC-verified media-server progress webhooks
-- outbound notification webhooks to per-video `webhookUrl`
+- outbound notification webhooks to per-video `webhookUrl` with HMAC headers (`x-cap-timestamp`, `x-cap-signature`, `x-cap-delivery-id`)
 - PostgreSQL queue with leases, heartbeats, reclaim, and dead-lettering
 - `cap5` runtime naming across defaults, paths, local state, and webhook media type
+- single-user email/password auth with stateless JWT (httpOnly cookies)
 
 ## What is intentionally not here
 
 - no multi-tenancy
 - no Redis / Kafka
-- no signed outbound webhooks
 - no active HLS pipeline despite enum/schema surface for it
 - no full production platform manifests beyond Docker Compose
 
@@ -97,9 +97,14 @@ That starts:
 5. worker queues `transcribe_video`, then `generate_ai` when eligible
 6. frontend polls status and shows playback, transcript, edits, and enrichments
 
+## Tooling
+
+- `nanobanana/` — Gemini-powered image generation toolkit for architecture slides and infographics (see `nanobanana/README.md`)
+
 ## Where to look next
 
 - [docs/system.md](docs/system.md) — runtime topology, architecture decisions, and capacity guidance
 - [docs/development.md](docs/development.md) — run, debug, incident response, and safe repo changes
 - [docs/contracts.md](docs/contracts.md) — API/webhook contracts, versioning stance, and contract changelog
 - [docs/status.md](docs/status.md) — current gaps and next improvement areas
+- [docs/auth-plan.md](docs/auth-plan.md) — auth implementation plan and review
