@@ -37,6 +37,7 @@ Completed in the actual repo during this pass:
 - queue failure-transition tests
 - cleanup-artifact lifecycle tests
 - implementation planning and doc cleanup
+- server-backed operator notes feature
 
 ## Execution principles
 

@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
+type NotesPanelProps = {
+  videoId: string;
+  initialNotes: string;
+  onSave: (notes: string) => Promise<boolean>;
+};
+
 const STORAGE_PREFIX = "cap5:notes:";
 const LEGACY_STORAGE_PREFIX = "cap4:notes:";
 
@@ -21,30 +27,51 @@ function loadStoredNotes(videoId: string): string {
   }
 }
 
-export function NotesPanel({ videoId }: { videoId: string }) {
+export function NotesPanel({ videoId, initialNotes, onSave }: NotesPanelProps) {
   const storageKey = `${STORAGE_PREFIX}${videoId}`;
-  const [notes, setNotes] = useState(() => loadStoredNotes(videoId));
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [notes, setNotes] = useState(initialNotes || loadStoredNotes(videoId));
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const saveTimer = useRef<number | null>(null);
+  const latestRequestId = useRef(0);
+
+  const persistLocal = (value: string) => {
+    try {
+      localStorage.setItem(storageKey, value);
+    } catch {
+      // Ignore localStorage quota and availability issues.
+    }
+  };
+
+  const scheduleSave = (value: string) => {
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(async () => {
+      const requestId = ++latestRequestId.current;
+      persistLocal(value);
+      const ok = await onSave(value);
+      if (requestId !== latestRequestId.current) return;
+      setSaveMessage(ok ? "Saved to app" : "Local fallback only");
+      window.setTimeout(() => setSaveMessage(null), 1500);
+    }, 700);
+  };
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const value = event.target.value;
     setNotes(value);
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      try {
-        localStorage.setItem(storageKey, value);
-      } catch {
-        // Ignore localStorage quota and availability issues.
-      }
-      setSavedAt(Date.now());
-    }, 600);
+    scheduleSave(value);
   };
 
   useEffect(() => {
-    setNotes(loadStoredNotes(videoId));
-    setSavedAt(null);
-  }, [videoId]);
+    const localNotes = loadStoredNotes(videoId);
+    const nextNotes = initialNotes || localNotes;
+    setNotes(nextNotes);
+    setSaveMessage(null);
+
+    if (!initialNotes && localNotes) {
+      void onSave(localNotes);
+    } else if (initialNotes) {
+      persistLocal(initialNotes);
+    }
+  }, [videoId, initialNotes]);
 
   useEffect(() => () => {
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
@@ -60,9 +87,9 @@ export function NotesPanel({ videoId }: { videoId: string }) {
         style={{ minHeight: "200px" }}
         spellCheck
       />
-      {savedAt && (
+      {saveMessage && (
         <p className="mt-1.5 text-[11px] text-muted select-none">
-          Saved locally
+          {saveMessage}
         </p>
       )}
     </div>

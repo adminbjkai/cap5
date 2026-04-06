@@ -68,6 +68,7 @@ export type VideoStatusResponse = {
       originalText?: string;
     }>;
   } | null;
+  operatorNotes: string | null;
   aiOutput: {
     provider: string | null;
     model: string | null;
@@ -104,6 +105,7 @@ export type WatchEditsResponse = {
     title: boolean;
     transcript: boolean;
     speakerLabels?: boolean;
+    notes?: boolean;
   };
 };
 
@@ -255,7 +257,7 @@ export async function getSystemProviderStatus(): Promise<ProviderStatusResponse>
 
 export async function saveWatchEdits(
   videoId: string,
-  payload: { title?: string | null; transcriptText?: string | null; speakerLabels?: Record<string, string> | null },
+  payload: { title?: string | null; transcriptText?: string | null; speakerLabels?: Record<string, string> | null; notesText?: string | null },
   idempotencyKey: string
 ): Promise<WatchEditsResponse> {
   return fetcher<WatchEditsResponse>(`/api/videos/${encodeURIComponent(videoId)}/watch-edits`, {

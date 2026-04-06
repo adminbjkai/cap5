@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE videos
+  ADD COLUMN IF NOT EXISTS operator_notes TEXT;
+
+COMMIT;

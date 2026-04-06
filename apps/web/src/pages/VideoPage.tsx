@@ -216,6 +216,16 @@ export function VideoPage() {
     } catch { return false; }
   }, [videoId, refresh]);
 
+  const saveNotes = useCallback(async (notesText: string): Promise<boolean> => {
+    try {
+      await saveWatchEdits(videoId, { notesText }, buildWatchIdempotencyKey());
+      await refresh();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [videoId, refresh]);
+
   /* ── Delete ──────────────────────────────────────────────────────────── */
   const handleDelete = useCallback(async (): Promise<void> => {
     if (!videoId || isDeleting) return;
@@ -240,7 +250,7 @@ export function VideoPage() {
 
   /* ── Rail tab content renderer ───────────────────────────────────────── */
   const renderRailTabContent = (tab: RailTab) => {
-    if (tab === "notes") return <NotesPanel videoId={videoId} />;
+    if (tab === "notes") return <NotesPanel videoId={videoId} initialNotes={status?.operatorNotes ?? ""} onSave={saveNotes} />;
     if (tab === "summary") {
       return (
         <SummaryCardCompact

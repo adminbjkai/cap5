@@ -184,6 +184,7 @@ Includes:
 - result and thumbnail keys
 - transcription and AI statuses
 - transcript text, segments, speaker labels
+- operator notes when present
 - AI output with title, summary, key points, chapters, entities, action items, quotes
 - dead-letter error messages for transcription / AI when present
 
@@ -196,7 +197,8 @@ Body can include:
 {
   "title": "New title",
   "transcriptText": "Edited transcript text",
-  "speakerLabels": { "0": "Host", "1": "Guest" }
+  "speakerLabels": { "0": "Host", "1": "Guest" },
+  "notesText": "Follow up on pricing and send summary to team"
 }
 ```
 
@@ -207,6 +209,7 @@ Behavior:
 - title updates `ai_outputs.title` when that row exists, otherwise `videos.name`
 - transcript edits rewrite `transcripts.segments_json` while preserving timing/confidence when possible
 - speaker labels update `transcripts.speaker_labels_json`
+- notes update `videos.operator_notes`
 
 ### `POST /api/videos/:id/delete`
 Soft delete.

@@ -78,7 +78,8 @@ function hasBodyField(body: unknown, field: string): boolean {
 function missingWatchEditFields(body: unknown): boolean {
   return !hasBodyField(body, "title")
     && !hasBodyField(body, "transcriptText")
-    && !hasBodyField(body, "speakerLabels");
+    && !hasBodyField(body, "speakerLabels")
+    && !hasBodyField(body, "notesText");
 }
 
 export async function videoRoutes(app: FastifyInstance) {
@@ -183,6 +184,7 @@ export async function videoRoutes(app: FastifyInstance) {
       ai_entities_json: unknown;
       ai_action_items_json: unknown;
       ai_quotes_json: unknown;
+      operator_notes: string | null;
       transcription_dead_error: string | null;
       ai_dead_error: string | null;
     }>(
@@ -210,6 +212,7 @@ export async function videoRoutes(app: FastifyInstance) {
          ao.entities_json AS ai_entities_json,
          ao.action_items_json AS ai_action_items_json,
          ao.quotes_json AS ai_quotes_json,
+         v.operator_notes,
          tj.last_error AS transcription_dead_error,
          aj.last_error AS ai_dead_error
        FROM videos v
@@ -302,7 +305,7 @@ export async function videoRoutes(app: FastifyInstance) {
   // PATCH /api/videos/:id/watch-edits — update editable watch-page metadata
   // ------------------------------------------------------------------
 
-  app.patch<{ Params: { id: string }; Body: { title?: string | null; transcriptText?: string | null; speakerLabels?: Record<string, string> | null } }>("/api/videos/:id/watch-edits", async (req, reply) => {
+  app.patch<{ Params: { id: string }; Body: { title?: string | null; transcriptText?: string | null; speakerLabels?: Record<string, string> | null; notesText?: string | null } }>("/api/videos/:id/watch-edits", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
 
     const { id: videoId } = parseParams(VideoIdParamSchema, req.params);
@@ -312,14 +315,16 @@ export async function videoRoutes(app: FastifyInstance) {
     const titleProvided = hasBodyField(req.body, "title");
     const transcriptProvided = hasBodyField(req.body, "transcriptText");
     const speakerLabelsProvided = hasBodyField(req.body, "speakerLabels");
+    const notesProvided = hasBodyField(req.body, "notesText");
     if (missingWatchEditFields(req.body)) {
-      return reply.code(400).send(badRequest("At least one field must be provided: title, transcriptText, speakerLabels"));
+      return reply.code(400).send(badRequest("At least one field must be provided: title, transcriptText, speakerLabels, notesText"));
     }
 
     const parsedBody = parseBody(WatchEditsBodySchema, req.body);
     const title = titleProvided ? (parsedBody.title ?? "").trim() : null;
     const transcriptText = transcriptProvided ? (parsedBody.transcriptText ?? "").trim() : null;
     const speakerLabels = speakerLabelsProvided ? normalizeSpeakerLabels(parsedBody.speakerLabels ?? {}) : null;
+    const notesText = notesProvided ? (parsedBody.notesText ?? "") : null;
     if (titleProvided && title !== null) {
       if (title.length === 0) {
         return reply.code(400).send(badRequest("Title cannot be empty"));
@@ -330,7 +335,8 @@ export async function videoRoutes(app: FastifyInstance) {
       videoId,
       title: titleProvided ? title : undefined,
       transcriptText: transcriptProvided ? transcriptText : undefined,
-      speakerLabels: speakerLabelsProvided ? speakerLabels : undefined
+      speakerLabels: speakerLabelsProvided ? speakerLabels : undefined,
+      notesText: notesProvided ? notesText : undefined
     }));
 
     const result = await withTransaction(env.DATABASE_URL, async (client) => {
@@ -355,6 +361,7 @@ export async function videoRoutes(app: FastifyInstance) {
       let titleUpdated = false;
       let transcriptUpdated = false;
       let speakerLabelsUpdated = false;
+      let notesUpdated = false;
 
       if (titleProvided) {
         const titleResult = await client.query<{ video_id: string }>(
@@ -408,13 +415,25 @@ export async function videoRoutes(app: FastifyInstance) {
         }
       }
 
+      if (notesProvided) {
+        await client.query(
+          `UPDATE videos
+           SET operator_notes = $2,
+               updated_at = now()
+           WHERE id = $1::uuid`,
+          [videoId, notesText]
+        );
+        notesUpdated = true;
+      }
+
       const body = {
         ok: true,
         videoId,
         updated: {
           title: titleUpdated,
           transcript: transcriptUpdated,
-          speakerLabels: speakerLabelsUpdated
+          speakerLabels: speakerLabelsUpdated,
+          notes: notesUpdated
         }
       };
 

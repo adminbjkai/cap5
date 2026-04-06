@@ -19,7 +19,7 @@ Single-tenant video processing platform for uploading or recording video, normal
 - signed single-part and multipart uploads to S3-compatible storage
 - media normalization through the dedicated media server
 - Deepgram transcription with speaker diarization
-- editable transcript text and speaker labels in the watch UI
+- editable transcript text, speaker labels, and server-backed operator notes in the watch UI
 - Groq title / summary / chapters / entities / action items / quotes
 - cursor-paginated library
 - soft delete with delayed cleanup job
@@ -99,7 +99,6 @@ That starts:
 
 ## Tooling
 
-- `nanobanana/` — Gemini-powered image generation toolkit for architecture slides and infographics (see `nanobanana/README.md`)
 
 ## Where to look next
 
@@ -107,4 +106,4 @@ That starts:
 - [docs/development.md](docs/development.md) — run, debug, incident response, and safe repo changes
 - [docs/contracts.md](docs/contracts.md) — API/webhook contracts, versioning stance, and contract changelog
 - [docs/status.md](docs/status.md) — current gaps and next improvement areas
-- [docs/auth-plan.md](docs/auth-plan.md) — auth implementation plan and review
+- [docs/auth-plan.md](docs/auth-plan.md) — current auth status and constraints

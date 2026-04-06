@@ -17,6 +17,7 @@ export const WatchEditsBodySchema = z.object({
   title: z.string().max(500).optional().nullable(),
   transcriptText: z.string().optional().nullable(),
   speakerLabels: z.record(z.string(), z.string()).optional().nullable(),
+  notesText: z.string().max(20000).optional().nullable(),
 })
 
 // ---------------------------------------------------------------------------

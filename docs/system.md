@@ -424,7 +424,7 @@ ffprobe -v error -print_format json -show_streams -show_format <file>
 
 - `HomePage` — video library grid with sorting (date/name/duration), filtering (all/processing/complete/failed), cursor-based pagination (limit 20), delete confirmation, provider status panel
 - `RecordPage` — 3-step recording wizard: setup (mic/camera selection) → preview → upload. Uses MediaRecorder API for screen/tab/window capture with microphone mixing. Supports file upload fallback. Auto-triggers upload for screen recordings.
-- `VideoPage` — video player with multi-tab sidebar (transcript, summary, chapters, notes, action items). Inline title editing. Transcript text and speaker label editing. Polls status every 2s with exponential backoff (up to 15s). Stops polling at terminal states. Retry/delete with confirmation dialogs.
+- `VideoPage` — video player with multi-tab sidebar (transcript, summary, chapters, notes, action items). Inline title editing. Transcript text, speaker label, and server-backed operator note editing. Polls status every 2s with exponential backoff (up to 15s). Stops polling at terminal states. Retry/delete with confirmation dialogs.
 
 ### Recording flow
 
@@ -475,7 +475,7 @@ ffprobe -v error -print_format json -show_streams -show_format <file>
 - `completeUpload(videoId)` → `{ jobId }`
 - `uploadMultipart(videoId, blob, contentType, onProgress?)` → `jobId` — handles initiate/presign/upload/complete loop
 - `getVideoStatus(videoId)` → full status with transcript, AI output, URLs
-- `saveWatchEdits(videoId, {title?, transcriptText?, speakerLabels?})` — idempotent
+- `saveWatchEdits(videoId, {title?, transcriptText?, speakerLabels?, notesText?})` — idempotent
 - `deleteVideo(videoId)` → `{ deletedAt }`
 - `retryVideo(videoId)` → `{ jobsReset[] }`
 - `getLibraryVideos({cursor?, limit?, sort?})` → `{ items[], nextCursor }`
@@ -541,6 +541,7 @@ Main per-video state:
 - `result_key`, `thumbnail_key`
 - duration/size/fps metadata
 - `webhook_url`
+- `operator_notes`
 - `deleted_at`
 
 ### `uploads`
@@ -630,7 +631,7 @@ If a video has `webhookUrl`, the system can send:
 - `video.transcription_complete` — queued by the worker
 - `video.ai_complete` — queued by the worker
 
-Outbound payloads are plain JSON POSTs and are **not signed** today.
+Outbound payloads are JSON POSTs with `x-cap-timestamp`, `x-cap-signature`, and `x-cap-delivery-id` headers.
 
 ## Shared packages
 

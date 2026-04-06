@@ -15,6 +15,7 @@ What works:
 - inbound webhook verification for media-server progress callbacks
 - signed outbound user webhooks
 - login throttling and auth event logging
+- server-backed operator notes on the watch page
 
 What is still rough:
 
