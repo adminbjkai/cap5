@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useState,
   type KeyboardEvent,
 } from "react";
 import { useEventBusOn } from "../lib/eventBus";
@@ -88,6 +89,8 @@ export function VideoPage() {
     () => deriveVideoChapters(status?.aiOutput, transcriptSegments),
     [status?.aiOutput, transcriptSegments],
   );
+  const [hiddenSpeakers, setHiddenSpeakers] = useState<Set<number>>(new Set());
+
   const summaryText = status?.aiOutput?.summary?.trim() ?? "";
   const hasSummaryStrip = summaryText.length > 0;
   const shouldTruncateSummary = summaryText.length > 220;
@@ -281,6 +284,7 @@ export function VideoPage() {
         onSeekToSeconds={requestSeek}
         onSaveTranscript={saveTranscript}
         onSaveSpeakerLabels={saveSpeakerLabels}
+        onHiddenSpeakersChange={setHiddenSpeakers}
         compact
       />
     );
@@ -385,6 +389,7 @@ export function VideoPage() {
               chapters={chapters}
               onSeekToSeconds={requestSeek}
               transcriptSegments={status?.transcript?.segments ?? []}
+              hiddenSpeakers={hiddenSpeakers}
             />
           )}
         </div>

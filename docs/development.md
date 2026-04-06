@@ -406,4 +406,4 @@ Add targeted E2E/integration runs when you touch:
 - queue behavior
 - transcription / AI pipeline
 - webhooks
-- watch-page editing (including operator notes)
+- watch-page editing (including operator notes and speaker-synced playback filtering)

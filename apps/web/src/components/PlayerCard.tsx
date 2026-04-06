@@ -30,6 +30,7 @@ export function PlayerCard({
   chapters,
   onSeekToSeconds,
   transcriptSegments,
+  hiddenSpeakers,
 }: {
   videoUrl: string | null;
   thumbnailUrl: string | null;
@@ -39,6 +40,7 @@ export function PlayerCard({
   chapters: ChapterItem[];
   onSeekToSeconds: (seconds: number) => void;
   transcriptSegments: TranscriptSegment[];
+  hiddenSpeakers: Set<number>;
 }) {
   const [playbackTimeSeconds, setPlaybackTimeSeconds] = useState(0);
   const [durationSeconds,     setDurationSeconds]     = useState(0);
@@ -54,6 +56,7 @@ export function PlayerCard({
   const videoRef     = useRef<HTMLVideoElement | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const trackRef     = useRef<HTMLDivElement | null>(null);
+  const lastAutoSkipRef = useRef<{ from: number; to: number; atMs: number } | null>(null);
 
   /* ── Seek on external request ─────────────────────────────────────────── */
   useEffect(() => {
@@ -65,6 +68,7 @@ export function PlayerCard({
     setPlaybackTimeSeconds(clamped);
     onPlaybackTimeChange?.(clamped);
   }, [seekRequest, onPlaybackTimeChange]);
+
 
   /* ── Derived values ───────────────────────────────────────────────────── */
   const hasResult   = Boolean(videoUrl);
@@ -103,6 +107,70 @@ export function PlayerCard({
       speaker: segment.speaker
     }));
   }, [durationSeconds, transcriptSegments]);
+
+  const blockedSpeakerRanges = useMemo(() => {
+    if (durationSeconds <= 0 || hiddenSpeakers.size === 0) return [] as Array<{ startSeconds: number; endSeconds: number }>;
+
+    const blocked = (Array.isArray(transcriptSegments) ? transcriptSegments : [])
+      .map((segment) => {
+        const speaker = Number(segment.speaker);
+        if (!Number.isInteger(speaker) || !hiddenSpeakers.has(speaker)) return null;
+
+        const startSeconds = Number(segment.startSeconds);
+        const rawEnd = Number(segment.endSeconds);
+        if (!Number.isFinite(startSeconds)) return null;
+
+        const fallbackEnd = startSeconds + 0.25;
+        const endSeconds = Number.isFinite(rawEnd) ? rawEnd : fallbackEnd;
+        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds));
+        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds));
+        if (safeEnd <= safeStart) return null;
+
+        return { startSeconds: safeStart, endSeconds: safeEnd };
+      })
+      .filter((segment): segment is { startSeconds: number; endSeconds: number } => Boolean(segment))
+      .sort((a, b) => a.startSeconds - b.startSeconds);
+
+    if (blocked.length <= 1) return blocked;
+
+    const merged: Array<{ startSeconds: number; endSeconds: number }> = [];
+    for (const range of blocked) {
+      const previous = merged[merged.length - 1];
+      if (!previous || range.startSeconds > previous.endSeconds + 0.05) {
+        merged.push({ ...range });
+      } else {
+        previous.endSeconds = Math.max(previous.endSeconds, range.endSeconds);
+      }
+    }
+    return merged;
+  }, [durationSeconds, transcriptSegments, hiddenSpeakers]);
+
+  const ensureAllowedPlaybackPosition = useCallback((candidateSeconds: number): number | null => {
+    if (blockedSpeakerRanges.length === 0) return null;
+    const current = Math.max(0, candidateSeconds);
+
+    for (const range of blockedSpeakerRanges) {
+      if (current + 0.01 < range.startSeconds) return null;
+      if (current >= range.startSeconds && current < range.endSeconds) {
+        return Math.min(durationSeconds, range.endSeconds + 0.02);
+      }
+    }
+
+    return null;
+  }, [blockedSpeakerRanges, durationSeconds]);
+
+
+  useEffect(() => {
+    const player = videoRef.current;
+    if (!player) return;
+
+    const nextAllowed = ensureAllowedPlaybackPosition(player.currentTime);
+    if (nextAllowed === null) return;
+
+    player.currentTime = nextAllowed;
+    setPlaybackTimeSeconds(nextAllowed);
+    onPlaybackTimeChange?.(nextAllowed);
+  }, [hiddenSpeakers, ensureAllowedPlaybackPosition, onPlaybackTimeChange]);
 
   const activeChapterIndex = useMemo(() => {
     if (timelineChapters.length === 0) return -1;
@@ -221,7 +289,22 @@ export function PlayerCard({
               onDurationChange?.(duration);
             }}
             onTimeUpdate={(e) => {
-              const time = e.currentTarget.currentTime || 0;
+              const player = e.currentTarget;
+              const time = player.currentTime || 0;
+              const skipTo = ensureAllowedPlaybackPosition(time);
+
+              if (skipTo !== null) {
+                const lastSkip = lastAutoSkipRef.current;
+                const now = Date.now();
+                if (!lastSkip || Math.abs(lastSkip.from - time) > 0.05 || Math.abs(lastSkip.to - skipTo) > 0.05 || now - lastSkip.atMs > 400) {
+                  lastAutoSkipRef.current = { from: time, to: skipTo, atMs: now };
+                  player.currentTime = skipTo;
+                  setPlaybackTimeSeconds(skipTo);
+                  onPlaybackTimeChange?.(skipTo);
+                  return;
+                }
+              }
+
               setPlaybackTimeSeconds(time);
               onPlaybackTimeChange?.(time);
             }}

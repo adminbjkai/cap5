@@ -15,6 +15,7 @@ export type TranscriptStateOptions = {
   onSaveSpeakerLabels: (labels: Record<string, string>) => Promise<boolean>;
   onSeekToSeconds: (seconds: number) => void;
   playbackTimeSeconds: number;
+  onHiddenSpeakersChange?: (hiddenSpeakers: Set<number>) => void;
 };
 
 export function useTranscriptState({
@@ -24,6 +25,7 @@ export function useTranscriptState({
   onSaveSpeakerLabels,
   onSeekToSeconds,
   playbackTimeSeconds,
+  onHiddenSpeakersChange,
 }: TranscriptStateOptions) {
   // ── Edit & copy feedback ──────────────────────────────────────────────
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
@@ -174,6 +176,10 @@ export function useTranscriptState({
       return next;
     });
   }, [speakerIds]);
+
+  useEffect(() => {
+    onHiddenSpeakersChange?.(new Set(hiddenSpeakers));
+  }, [hiddenSpeakers, onHiddenSpeakersChange]);
 
   useEffect(() => {
     if (!isEditing) { setDraftText(transcriptText); setSaveError(null); }

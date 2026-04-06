@@ -14,6 +14,7 @@ type TranscriptCardProps = {
   onSeekToSeconds: (seconds: number) => void;
   onSaveTranscript: (text: string) => Promise<boolean>;
   onSaveSpeakerLabels: (labels: Record<string, string>) => Promise<boolean>;
+  onHiddenSpeakersChange?: (hiddenSpeakers: Set<number>) => void;
   /** When true, omits the outer card wrapper — for embedding in the right rail */
   compact?: boolean;
 };
@@ -27,6 +28,7 @@ export function TranscriptCard({
   onSeekToSeconds,
   onSaveTranscript,
   onSaveSpeakerLabels,
+  onHiddenSpeakersChange,
   compact = false,
 }: TranscriptCardProps) {
   const {
@@ -85,6 +87,7 @@ export function TranscriptCard({
     onSaveSpeakerLabels,
     onSeekToSeconds,
     playbackTimeSeconds,
+    onHiddenSpeakersChange,
   });
 
   const Inner = (

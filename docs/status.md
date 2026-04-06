@@ -17,6 +17,7 @@ What works:
 - login throttling and auth event logging
 - server-backed operator notes on the watch page
 - stabilized right-rail tab rendering to prevent overlapping panel content across browsers
+- speaker filtering now live-syncs transcript visibility with playback skipping
 
 What is still rough:
 
