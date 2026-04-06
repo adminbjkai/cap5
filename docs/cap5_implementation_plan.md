@@ -38,6 +38,7 @@ Completed in the actual repo during this pass:
 - cleanup-artifact lifecycle tests
 - implementation planning and doc cleanup
 - server-backed operator notes feature
+- right-rail tab rendering hardening for cross-browser panel isolation
 
 ## Execution principles
 

@@ -22,26 +22,43 @@ export function VideoRail({
   return (
     <div className="min-w-0">
       <div
-        className="flex max-h-[520px] flex-col overflow-hidden rounded-xl border shadow-card"
+        className="flex max-h-[520px] min-h-[320px] flex-col overflow-hidden rounded-xl border shadow-card"
         style={{ background: "var(--bg-surface)", borderColor: "var(--border-default)" }}
       >
-        <div className="rail-tab-bar">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => onSelectTab(tab.key)}
-              className={`rail-tab ${railTab === tab.key ? "rail-tab-active" : ""}`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="rail-tab-bar" role="tablist" aria-label="Video details panels">
+          {TABS.map((tab) => {
+            const isActive = railTab === tab.key;
+            const tabId = `video-rail-tab-${tab.key}`;
+            const panelId = `video-rail-panel-${tab.key}`;
+
+            return (
+              <button
+                key={tab.key}
+                id={tabId}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={panelId}
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => onSelectTab(tab.key)}
+                className={`rail-tab ${isActive ? "rail-tab-active" : ""}`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="rail-tab-stack scroll-panel">
-          <div key={railTab} className="rail-tab-panel-enter">
+        <div className="rail-tab-stack">
+          <section
+            key={railTab}
+            id={`video-rail-panel-${railTab}`}
+            role="tabpanel"
+            aria-labelledby={`video-rail-tab-${railTab}`}
+            className="rail-tab-panel"
+          >
             {renderRailTabContent(railTab)}
-          </div>
+          </section>
         </div>
       </div>
     </div>

@@ -1228,14 +1228,14 @@ body {
     height: 3px;
   }
   .rail-tab-stack {
-    @apply relative min-h-0 flex-1 overflow-y-auto;
+    @apply relative min-h-0 flex-1 overflow-hidden;
+    isolation: isolate;
   }
-  .rail-tab-panel-enter {
-    animation: rail-tab-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .rail-tab-panel-exit {
-    @apply absolute inset-0 pointer-events-none;
-    animation: rail-tab-out 180ms ease both;
+  .rail-tab-panel {
+    @apply h-full min-h-0 overflow-y-auto;
+    contain: layout paint;
+    backface-visibility: hidden;
+    transform: translateZ(0);
   }
 
   /* Notes tab textarea */
@@ -1317,8 +1317,7 @@ body {
   }
   .page-transition-enter,
   .library-card-reveal,
-  .rail-tab-panel-enter,
-  .rail-tab-panel-exit,
+  .rail-tab-panel,
   .progress-active-bar,
   .dialog-surface {
     animation: none !important;

@@ -16,6 +16,7 @@ What works:
 - signed outbound user webhooks
 - login throttling and auth event logging
 - server-backed operator notes on the watch page
+- stabilized right-rail tab rendering to prevent overlapping panel content across browsers
 
 What is still rough:
 
