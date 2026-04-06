@@ -27,27 +27,16 @@ Architecturally, the repo is in good shape:
 - auth exists and is wired end to end
 - the worker queue has leases, heartbeats, reclaim, and dead-letter behavior
 
-What was weak at the start of this planning pass:
+## What changed in the current hardening pass
 
-- outbound user webhooks were unsigned
-- queue/workflow edge-case coverage was still selective
-- production/ops guidance was still thinner than product and architecture guidance
-- worker throughput/scaling choices were documented but not fully productized
+Completed in the actual repo during this pass:
 
-## What changed in this pass
-
-Phase 1 has started. The repo now includes signed outbound webhook delivery:
-
-- outbound webhook requests now include:
-  - `x-cap-timestamp`
-  - `x-cap-signature`
-  - `x-cap-delivery-id`
-- signature format is `v1=<hex hmac sha256>` over `${timestamp}.${rawBody}`
-- `OUTBOUND_WEBHOOK_SECRET` was added as an optional env var
-- outbound signing falls back to `MEDIA_SERVER_WEBHOOK_SECRET` when no separate outbound secret is configured
-- docs were updated to reflect the contract
-
-That means the implementation plan below is not hypothetical anymore — phase 1 has begun and the first security gap has been closed.
+- signed outbound webhook delivery
+- outbound webhook delivery-path tests
+- auth login throttling and auth event logging
+- queue failure-transition tests
+- cleanup-artifact lifecycle tests
+- implementation planning and doc cleanup
 
 ## Execution principles
 
@@ -67,41 +56,35 @@ Every meaningful implementation phase should update code, tests, and docs togeth
 
 ## Phase 1 — Security baseline and webhook trust boundary
 
-### Goal
-Tighten the externally visible trust boundary without introducing heavy architectural churn.
-
 ### Status
-In progress / partially completed in this pass.
+Substantially completed.
 
-### Done now
+### Completed
 - signed outbound webhook delivery
 - optional separate outbound signing secret
-- contract/doc updates for outbound webhook headers
+- delivery-path tests for signed outbound requests
+- auth-specific login throttling
+- auth event logging for success/failure/rate-limited attempts
 
-### Remaining work in this phase
-1. add delivery-path tests that assert signed outbound headers are present
-2. validate whether outbound webhook consumers need a short migration note or example verifier
-3. review `webhookUrl` policy again for SSRF posture and redirect handling
-4. add auth-specific login throttling or lockout behavior
-5. add auth failure audit logging
-
-### Why this phase is first
-This closes the clearest security gap with limited code surface area and sets a better baseline for production-style integrations.
+### Remaining follow-up
+1. review `webhookUrl` policy again for SSRF posture and redirect handling
+2. validate whether outbound webhook consumers need a short migration note or verifier example
+3. optionally add debug-level logging for invalid token verification failures
 
 ## Phase 2 — Queue and workflow correctness
 
-### Goal
-Reduce the chance of stuck, duplicated, or inconsistently recovered pipeline states.
+### Status
+In progress.
 
-### Work items
-1. add tests for delete → cleanup-artifacts lifecycle
-2. add tests for retry semantics around `dead`, `running`, and reclaimed jobs
-3. add tests for lease expiry / reclaim / terminal failure transitions
-4. add explicit tests for outbound webhook retry behavior
-5. decide whether `WORKER_CLAIM_BATCH_SIZE` should become real worker concurrency or be removed from config
+### Completed
+- tests for queue failure transitions via `fail()`
+- tests for `markRunning()` lease-loss behavior
+- tests for cleanup-artifact key collection and no-object path
 
-### Expected outcome
-The worker becomes easier to trust under failure, not just on the happy path.
+### Remaining work
+1. add direct tests for reclaim / expired leases / terminal failure transitions
+2. expand delete + retry lifecycle coverage beyond focused unit tests
+3. decide whether `WORKER_CLAIM_BATCH_SIZE` should become real worker concurrency or be removed from config
 
 ## Phase 3 — Frontend resilience and operator clarity
 
@@ -113,9 +96,6 @@ Make failure states and recovery paths obvious in the UI.
 2. make provider degradation clearer on watch and library screens
 3. cover the recording flow end-to-end in browser automation
 4. tighten retry affordances so operators know what will happen next
-
-### Expected outcome
-The app feels less like an engineering demo and more like an operational tool.
 
 ## Phase 4 — Throughput and scaling path
 
@@ -131,9 +111,6 @@ Choose and implement the real scaling model rather than leaving it implicit.
 3. review media-server disk/memory pressure under concurrent large uploads
 4. document the first practical scale ceiling and the next bottleneck after that
 
-### Expected outcome
-Scaling stops being “probably fine” and becomes an explicit, tested operational stance.
-
 ## Phase 5 — Production operations
 
 ### Goal
@@ -145,9 +122,6 @@ Make the app easier to deploy, observe, and recover.
 3. add backup/restore guidance for Postgres and object storage
 4. add retention/lifecycle guidance for raw, processed, transcript, and derived artifacts
 5. review public/system endpoints and deployment defaults for production exposure
-
-### Expected outcome
-The project becomes materially closer to safe production use.
 
 ## Phase 6 — Feature expansion only after the above
 
@@ -162,20 +136,18 @@ Expand product surface once the core pipeline is hardened.
 
 ## Immediate next implementation recommendation
 
-The next best code tasks after this pass are:
+The next best code tasks are:
 
-1. add worker tests for signed outbound webhook delivery
-2. add route-specific auth throttling on login
-3. add queue edge-case tests around reclaim and terminal failures
-
-That order keeps momentum on the same hardening track and avoids context-switching into lower-value polish too early.
+1. add reclaim / expired-lease coverage
+2. expand delete/retry lifecycle coverage with broader integration-style tests
+3. clarify dead-job and degraded-provider states in the UI
 
 ## Definition of done for the current hardening cycle
 
 The current hardening cycle should be considered successful when all of the following are true:
 
 - outbound webhook signing is implemented and documented
-- auth/login hardening is no longer carrying obvious TODOs
+- auth/login hardening is in place and tested
 - queue lifecycle edge cases are covered by automated tests
 - the operator UI clearly communicates failure and retry states
 

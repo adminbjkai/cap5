@@ -13,12 +13,14 @@ What works:
 - queue-based retries for some eligible transcription / AI jobs
 - provider status endpoint
 - inbound webhook verification for media-server progress callbacks
+- signed outbound user webhooks
+- login throttling and auth event logging
 
 What is still rough:
 
-- outbound webhooks are now HMAC-signed; consumer rollout/testing is the next follow-up
 - no real production deployment story beyond Compose
 - no active HLS path despite schema hints
+- worker throughput scaling is still intentionally simple
 
 ## Quality snapshot
 
@@ -29,48 +31,47 @@ Automated coverage exists for:
 - API E2E around jobs, library, uploads, videos, webhooks
 - API integration flow
 - provider tests for Deepgram and Groq
+- worker tests for outbound webhook signing and delivery
+- worker tests for queue failure transitions and cleanup lifecycle
+- API unit tests for login throttling behavior
 
 Highest-risk gaps:
 
-- delete + cleanup lifecycle
-- retry semantics around `dead` / `running` jobs
-- outbound webhook delivery behavior
+- reclaim / expired-lease worker behavior still needs direct coverage
 - full browser recording flow E2E
-- queue reclaim/dead-letter edge cases
-- no checked-in formal load benchmark yet, despite the new capacity guide in `docs/system.md`
+- more end-to-end delete/retry lifecycle coverage
+- no checked-in formal load benchmark yet, despite the capacity guidance in `docs/system.md`
 
 ## Next improvement areas
 
-### 1. Security baseline
+### 1. Queue and workflow resilience
 
-- **auth: implemented** — single-user email/password + JWT, see `docs/auth-plan.md`
-- validate outbound webhook consumer adoption and add delivery-path tests for signed requests
-- strengthen outbound request policy beyond current create-time webhook URL checks
-- review MinIO exposure defaults for anything beyond local/dev use
-
-### 2. Queue and workflow resilience
-
-- add tests for delete + cleanup artifacts
-- add tests for retry semantics
 - add tests for reclaim / expired leases / terminal failure transitions
+- expand delete + retry lifecycle coverage beyond current focused unit tests
 - decide whether `WORKER_CLAIM_BATCH_SIZE` should be used or removed
 
-### 3. Frontend quality
+### 2. Frontend quality
 
 - cover recording flow end-to-end
 - improve error handling around dead jobs and degraded providers
 - make processing/retry states clearer in the UI
 
-### 4. Deployment/ops
+### 3. Deployment/ops
 
 - add a real production topology story
 - add observability guidance
 - add backup / restore guidance
 - add storage lifecycle/retention guidance
 
+### 4. Security follow-up
+
+- review outbound request policy beyond current create-time webhook URL checks
+- validate webhook consumer rollout and publish a small verifier example if needed
+- review MinIO exposure defaults for anything beyond local/dev use
+
 ## Not a current truth source
 
-Do not treat old roadmap-style docs as source of truth. The best code-level anchors remain:
+Do not treat older roadmap-style docs as source of truth. The best code-level anchors remain:
 
 - `db/migrations/`
 - `packages/config/src/index.ts`
