@@ -1,6 +1,22 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
+import type { Logger } from "@cap/logger";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Minimal shape the auth routes reach for; cast through `unknown` to avoid
+// pulling in every Logger method in this test mock.
+const mockServiceLogger = (): Logger =>
+  ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    withContext: vi.fn(),
+    logger: {},
+    context: {},
+    logRequest: vi.fn()
+  }) as unknown as Logger;
 
 const queryMock = vi.fn();
 const verifyPasswordMock = vi.fn();
@@ -41,17 +57,7 @@ describe("authRoutes login hardening", () => {
     verifyPasswordMock.mockResolvedValue(false);
 
     const app = Fastify();
-    app.decorate("serviceLogger", {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-      trace: vi.fn(),
-      withContext: vi.fn(),
-      logger: {},
-      context: {},
-      logRequest: vi.fn()
-    } as any);
+    app.decorate("serviceLogger", mockServiceLogger());
     await app.register(cookie);
     const { authRoutes } = await import("./auth.js");
     await app.register(authRoutes);
@@ -88,17 +94,7 @@ describe("authRoutes login hardening", () => {
       .mockResolvedValueOnce(true);
 
     const app = Fastify();
-    app.decorate("serviceLogger", {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-      trace: vi.fn(),
-      withContext: vi.fn(),
-      logger: {},
-      context: {},
-      logRequest: vi.fn()
-    } as any);
+    app.decorate("serviceLogger", mockServiceLogger());
     await app.register(cookie);
     const { authRoutes } = await import("./auth.js");
     await app.register(authRoutes);
