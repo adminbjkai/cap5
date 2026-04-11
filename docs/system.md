@@ -369,7 +369,7 @@ Current job types:
 
 Important implementation note:
 
-- `WORKER_CLAIM_BATCH_SIZE` exists in env/config, but the current worker loop claims one job at a time
+- `WORKER_CLAIM_BATCH_SIZE` is reserved/dormant in env/config — the current worker loop claims exactly one job per tick. The reclaim-expired-leases tick uses a separate `WORKER_RECLAIM_BATCH_SIZE` (default 25)
 
 ## Media-server internals
 
@@ -498,7 +498,7 @@ There is no checked-in formal benchmark suite yet. Treat this section as the cur
 ### What is true in code today
 
 - the worker sleeps for `WORKER_POLL_MS` between claim attempts
-- `WORKER_CLAIM_BATCH_SIZE` exists, but the main loop still claims only one job
+- `WORKER_CLAIM_BATCH_SIZE` is reserved/dormant; the main loop still claims only one job per tick. Reclaim is a separate tick governed by `WORKER_RECLAIM_BATCH_SIZE` (default 25)
 - lease handling is timer-based with a 60s default lease, 15s heartbeat, and 10s reclaim pass
 - media-server writes intermediates under `/tmp/cap5-media/<videoId>`
 - media-server reads result artifacts into memory before upload

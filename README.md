@@ -97,9 +97,6 @@ That starts:
 5. worker queues `transcribe_video`, then `generate_ai` when eligible
 6. frontend polls status and shows playback, transcript, edits, and enrichments
 
-## Tooling
-
-
 ## Where to look next
 
 - [docs/system.md](docs/system.md) — runtime topology, architecture decisions, and capacity guidance
@@ -107,4 +104,5 @@ That starts:
 - [docs/contracts.md](docs/contracts.md) — API/webhook contracts, versioning stance, and contract changelog
 - [docs/status.md](docs/status.md) — current gaps and next improvement areas
 - [docs/auth-plan.md](docs/auth-plan.md) — current auth status and constraints
-- [docs/review-auth-system.md](docs/review-auth-system.md) — auth review notes and follow-up suggestions
+- [docs/review-auth-system.md](docs/review-auth-system.md) — dated auth-system code-review snapshot
+- [docs/review-2026-04-10.md](docs/review-2026-04-10.md) — dated full-repo review + changelog (most recent)

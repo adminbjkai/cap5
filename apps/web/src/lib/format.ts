@@ -1,3 +1,10 @@
+/**
+ * Format a duration in seconds as "mm:ss" (or "hh:mm:ss" for durations >= 1h).
+ *
+ * `formatTimestamp` is kept as an alias for historical call sites that treat
+ * the same formatter as a "media timecode" rather than a "duration". Both names
+ * share one implementation so output is guaranteed to stay consistent.
+ */
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds));
   const hrs = Math.floor(seconds / 3600);
@@ -7,6 +14,8 @@ export function formatDuration(totalSeconds: number): string {
   if (hrs > 0) return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
+
+export const formatTimestamp = formatDuration;
 
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
@@ -41,13 +50,3 @@ export function buildPublicObjectUrl(key: string): string {
   return `${base}/${encodedKey}`;
 }
 
-export function formatTimestamp(secondsInput: number): string {
-  const totalSeconds = Math.max(0, Math.floor(secondsInput));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}

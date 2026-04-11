@@ -27,5 +27,5 @@ Auth is implemented — see `docs/auth-plan.md` for the current auth status and 
 - Mutations require `Idempotency-Key` header
 - Processing phases are monotonic (rank only moves forward)
 - Inbound and outbound webhooks use timestamped HMAC headers
-- The worker loop claims one job at a time despite `WORKER_CLAIM_BATCH_SIZE` existing in config
+- The worker loop claims one job at a time; `WORKER_CLAIM_BATCH_SIZE` is reserved/dormant and accepted only for forward compatibility. The reclaim tick uses `WORKER_RECLAIM_BATCH_SIZE`.
 - Soft delete with delayed `cleanup_artifacts` job (5 min)

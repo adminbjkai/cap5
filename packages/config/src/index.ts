@@ -19,12 +19,17 @@ const BaseEnv = z.object({
   MEDIA_SERVER_PORT: z.coerce.number().int().positive().default(3100),
   MEDIA_SERVER_BASE_URL: z.string().url().default("http://media-server:3100"),
   WORKER_ID: z.string().default("worker-1"),
+  // Reserved: when the worker loop switches from one-job-at-a-time to batch
+  // claiming, this will cap the LIMIT on the claim SQL. Today the loop always
+  // claims exactly one job per tick, so this key is intentionally dormant and
+  // accepted only to avoid breaking existing .env files. See docs/system.md.
   WORKER_CLAIM_BATCH_SIZE: z.coerce.number().int().positive().default(5),
   WORKER_LEASE_SECONDS: z.coerce.number().int().positive().default(60),
   WORKER_MAX_ATTEMPTS: z.coerce.number().int().positive().default(6),
   WORKER_POLL_MS: z.coerce.number().int().positive().default(2000),
   WORKER_HEARTBEAT_MS: z.coerce.number().int().positive().default(15000),
   WORKER_RECLAIM_MS: z.coerce.number().int().positive().default(10000),
+  WORKER_RECLAIM_BATCH_SIZE: z.coerce.number().int().positive().default(25),
   // S3 / object storage
   S3_ENDPOINT: z.string().url().default("http://minio:9000"),
   S3_PUBLIC_ENDPOINT: z.string().url().default("http://localhost:8922"),

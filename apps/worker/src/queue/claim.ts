@@ -16,7 +16,7 @@ export async function claimOne(excludeTypes: JobType[] = []): Promise<JobRow | n
 
 export async function reclaimExpiredLeases(): Promise<Array<{ id: number; video_id: string; job_type: JobType; status: string }>> {
   return withTransaction(env.DATABASE_URL, async (client) => {
-    const result = await client.query(RECLAIM_SQL, [env.WORKER_CLAIM_BATCH_SIZE]);
+    const result = await client.query(RECLAIM_SQL, [env.WORKER_RECLAIM_BATCH_SIZE]);
     return result.rows;
   });
 }

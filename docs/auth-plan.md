@@ -55,6 +55,10 @@ Database/config:
 - `packages/config/src/index.ts`
 - `.env.example`
 
+## Related review
+
+`docs/review-auth-system.md` is a dated code-review snapshot of the same system. This file is the living status doc; the review file is a point-in-time sign-off.
+
 ## Remaining auth follow-up ideas
 
 These are not blockers for the current single-user app, but they are reasonable future improvements:
