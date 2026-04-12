@@ -38,6 +38,8 @@ Automated coverage exists for:
 - worker tests for queue failure transitions and cleanup lifecycle
 - worker tests for `claimOne()` and `reclaimExpiredLeases()` (parameters, SQL path, batch-size env)
 - API unit tests for login throttling behavior
+- web unit tests for speaker-filter chip `aria-pressed` toggle state
+- web unit tests for `buildPlayableSpeakerRanges` edge cases (non-positive duration, boundary clamping, out-of-order input, non-finite/degenerate segments, filter-off passthrough)
 
 Highest-risk gaps:
 

@@ -51,7 +51,8 @@ Response:
 
 Behavior:
 - succeeds only if zero users exist in the database
-- returns 400 if attempted when a user already exists
+- returns 201 on success with `{ ok: true, userId }`
+- returns 409 if attempted when a user already exists
 - hashes password with bcrypt (cost 12)
 
 ### `POST /api/auth/login`
@@ -76,6 +77,7 @@ Response:
 
 Behavior:
 - returns 401 on invalid email or password
+- returns 429 with a `Retry-After` header when throttled by login rate limiting
 - sets `cap5_token` as an httpOnly, Secure, SameSite=Strict cookie
 - token is a JWT signed with HS256, valid for 7 days by default
 
@@ -108,7 +110,7 @@ Response:
 Behavior:
 - requires valid JWT in `Authorization: Bearer <token>` header or `cap5_token` cookie
 - returns 401 if not authenticated
-- returns 500 if user record no longer exists (shouldn't happen in normal operation)
+- returns 404 if the user record no longer exists (shouldn't happen in normal operation)
 
 ### Authentication headers
 
@@ -214,11 +216,18 @@ Behavior:
 ### `POST /api/videos/:id/delete`
 Soft delete.
 
+Response:
+
+```json
+{ "ok": true, "videoId": "uuid", "deletedAt": "2026-04-11T00:00:00Z" }
+```
+
 Behavior:
 
 - requires `Idempotency-Key`
 - sets `videos.deleted_at`
 - queues `cleanup_artifacts` delayed by 5 minutes
+- idempotent: calling on an already-deleted video returns the original `deletedAt` without re-queueing cleanup
 
 ### `POST /api/videos/:id/retry`
 Retry path for transcription / AI work.

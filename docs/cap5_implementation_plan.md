@@ -85,6 +85,7 @@ In progress.
 - tests for cleanup-artifact key collection and no-object path
 - tests for `claimOne()` + `reclaimExpiredLeases()` (parameters, SQL path, batch-size env)
 - `WORKER_CLAIM_BATCH_SIZE` is now explicitly reserved/dormant; reclaim was split out to a dedicated `WORKER_RECLAIM_BATCH_SIZE`
+- edge-case unit coverage for `buildPlayableSpeakerRanges` (duration guard, boundary clamp, out-of-order inputs, non-finite/degenerate segments, filter-off passthrough)
 
 ### Remaining work
 1. expand delete + retry lifecycle coverage beyond focused unit tests

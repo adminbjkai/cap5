@@ -668,6 +668,5 @@ Pino-based structured JSON logging. Redacts: password, secret, token, apiKey, au
 ## Intentionally missing or incomplete
 
 - multi-tenant isolation
-- signed outbound webhooks
 - active HLS processing path
 - polished production deployment story beyond Docker Compose

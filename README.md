@@ -105,4 +105,5 @@ That starts:
 - [docs/status.md](docs/status.md) — current gaps and next improvement areas
 - [docs/auth-plan.md](docs/auth-plan.md) — current auth status and constraints
 - [docs/review-auth-system.md](docs/review-auth-system.md) — dated auth-system code-review snapshot
-- [docs/review-2026-04-10.md](docs/review-2026-04-10.md) — dated full-repo review + changelog (most recent)
+- [docs/review-2026-04-11.md](docs/review-2026-04-11.md) — dated full-repo review + changelog (most recent)
+- [docs/review-2026-04-10.md](docs/review-2026-04-10.md) — previous dated full-repo review + changelog

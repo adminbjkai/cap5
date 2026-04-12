@@ -199,10 +199,15 @@ export function TranscriptControls({
           )}
           {speakerIds.map((speaker) => {
             const isHidden = hiddenSpeakers.has(speaker);
+            const label = getSpeakerLabel(speaker);
             return (
               <button
                 key={`speaker-filter-${speaker}`}
                 type="button"
+                // Speaker-filter chips are toggle buttons — exposing aria-pressed
+                // lets screen readers announce visibility state correctly.
+                aria-pressed={!isHidden}
+                aria-label={isHidden ? `Show ${label}` : `Hide ${label}`}
                 onClick={() => onToggleSpeakerVisibility(speaker)}
                 className={`speaker-filter-chip ${isHidden ? "speaker-filter-chip-hidden" : ""}`}
                 style={{
@@ -211,7 +216,7 @@ export function TranscriptControls({
                 }}
                 title={isHidden ? "Show speaker" : "Hide speaker"}
               >
-                {getSpeakerLabel(speaker)}
+                {label}
               </button>
             );
           })}
