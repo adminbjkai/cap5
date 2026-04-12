@@ -14,6 +14,7 @@ import { buildPublicObjectUrl, formatDuration } from '../lib/format';
 
 type LibrarySort = 'date_desc' | 'name_asc' | 'duration_desc';
 type LibraryFilter = 'all' | 'processing' | 'complete' | 'failed';
+type DateRange = 'all' | 'today' | 'week' | 'month' | 'quarter';
 
 export function HomePage() {
   const [libraryItems, setLibraryItems] = useState<LibraryVideoCard[]>([]);
@@ -28,6 +29,8 @@ export function HomePage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<LibrarySort>('date_desc');
   const [filterBy, setFilterBy] = useState<LibraryFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange>('all');
   const [deletingVideoIds, setDeletingVideoIds] = useState<string[]>([]);
   const loadingSkeletonCount = 8;
 
@@ -142,9 +145,24 @@ export function HomePage() {
     }
   };
 
-  const filteredItems = libraryItems.filter(item =>
-    filterBy === 'all' ? true : phaseBucket(item.processingPhase) === filterBy
-  );
+  const dateRangeStart = (() => {
+    const now = new Date();
+    if (dateRange === 'today') {
+      const d = new Date(now); d.setHours(0, 0, 0, 0); return d;
+    }
+    if (dateRange === 'week') { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
+    if (dateRange === 'month') { const d = new Date(now); d.setMonth(d.getMonth() - 1); return d; }
+    if (dateRange === 'quarter') { const d = new Date(now); d.setMonth(d.getMonth() - 3); return d; }
+    return null;
+  })();
+
+  const q = searchQuery.trim().toLowerCase();
+  const filteredItems = libraryItems.filter(item => {
+    if (filterBy !== 'all' && phaseBucket(item.processingPhase) !== filterBy) return false;
+    if (q && !item.displayTitle.toLowerCase().includes(q)) return false;
+    if (dateRangeStart && new Date(item.createdAt) < dateRangeStart) return false;
+    return true;
+  });
   const visibleItems = [...filteredItems].sort((a, b) => {
     if (sortBy === 'name_asc') return a.displayTitle.localeCompare(b.displayTitle);
     if (sortBy === 'duration_desc') return (b.durationSeconds ?? -1) - (a.durationSeconds ?? -1);
@@ -188,36 +206,77 @@ export function HomePage() {
       />
 
       <section>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold px-1">Library</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              aria-label="Sort library"
-              value={sortBy}
-              onChange={event => setSortBy(event.target.value as LibrarySort)}
-              className="input-control h-9 w-auto min-w-[10rem] px-3 py-1.5 text-xs font-semibold"
+        <div className="mb-4 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold px-1">Library</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                aria-label="Sort library"
+                value={sortBy}
+                onChange={event => setSortBy(event.target.value as LibrarySort)}
+                className="input-control h-9 w-auto min-w-[10rem] px-3 py-1.5 text-xs font-semibold"
+              >
+                <option value="date_desc">Date (Newest)</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="duration_desc">Duration (Longest)</option>
+              </select>
+              <select
+                aria-label="Filter library"
+                value={filterBy}
+                onChange={event => setFilterBy(event.target.value as LibraryFilter)}
+                className="input-control h-9 w-auto min-w-[10rem] px-3 py-1.5 text-xs font-semibold"
+              >
+                <option value="all">All Statuses</option>
+                <option value="processing">Processing</option>
+                <option value="complete">Complete</option>
+                <option value="failed">Failed</option>
+              </select>
+              <select
+                aria-label="Filter by date range"
+                value={dateRange}
+                onChange={event => setDateRange(event.target.value as DateRange)}
+                className="input-control h-9 w-auto min-w-[10rem] px-3 py-1.5 text-xs font-semibold"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+                <option value="quarter">Last 3 Months</option>
+              </select>
+              <button
+                onClick={() => void refreshLibrary()}
+                className="text-xs font-medium hover:underline text-muted"
+              >
+                {loadingLibrary ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+          <div className="relative">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
             >
-              <option value="date_desc">Date (Newest)</option>
-              <option value="name_asc">Name (A-Z)</option>
-              <option value="duration_desc">Duration (Longest)</option>
-            </select>
-            <select
-              aria-label="Filter library"
-              value={filterBy}
-              onChange={event => setFilterBy(event.target.value as LibraryFilter)}
-              className="input-control h-9 w-auto min-w-[10rem] px-3 py-1.5 text-xs font-semibold"
-            >
-              <option value="all">All Statuses</option>
-              <option value="processing">Processing</option>
-              <option value="complete">Complete</option>
-              <option value="failed">Failed</option>
-            </select>
-            <button
-              onClick={() => void refreshLibrary()}
-              className="text-xs font-medium hover:underline text-muted"
-            >
-              {loadingLibrary ? 'Refreshing...' : 'Refresh'}
-            </button>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input
+              type="search"
+              aria-label="Search videos by title"
+              placeholder="Search by title…"
+              value={searchQuery}
+              onChange={event => setSearchQuery(event.target.value)}
+              className="input-control h-9 w-full pl-9 pr-4 text-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
@@ -249,7 +308,7 @@ export function HomePage() {
         ) : visibleItems.length === 0 ? (
           <FeedbackMessage
             type="empty"
-            message="No videos match the selected filter."
+            message={q ? `No videos found matching "${searchQuery}".` : 'No videos match the selected filters.'}
             className="py-10"
           />
         ) : (
