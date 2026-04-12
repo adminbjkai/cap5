@@ -83,11 +83,12 @@ In progress.
 - tests for queue failure transitions via `fail()`
 - tests for `markRunning()` lease-loss behavior
 - tests for cleanup-artifact key collection and no-object path
+- tests for `claimOne()` + `reclaimExpiredLeases()` (parameters, SQL path, batch-size env)
+- `WORKER_CLAIM_BATCH_SIZE` is now explicitly reserved/dormant; reclaim was split out to a dedicated `WORKER_RECLAIM_BATCH_SIZE`
 
 ### Remaining work
-1. add direct tests for reclaim / expired leases / terminal failure transitions
-2. expand delete + retry lifecycle coverage beyond focused unit tests
-3. decide whether `WORKER_CLAIM_BATCH_SIZE` should become real worker concurrency or be removed from config
+1. expand delete + retry lifecycle coverage beyond focused unit tests
+2. revisit the claim loop itself (one-at-a-time vs batch) if/when worker throughput scaling is needed — at that point `WORKER_CLAIM_BATCH_SIZE` graduates from dormant to real
 
 ## Phase 3 — Frontend resilience and operator clarity
 

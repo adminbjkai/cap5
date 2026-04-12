@@ -36,11 +36,11 @@ Automated coverage exists for:
 - provider tests for Deepgram and Groq
 - worker tests for outbound webhook signing and delivery
 - worker tests for queue failure transitions and cleanup lifecycle
+- worker tests for `claimOne()` and `reclaimExpiredLeases()` (parameters, SQL path, batch-size env)
 - API unit tests for login throttling behavior
 
 Highest-risk gaps:
 
-- reclaim / expired-lease worker behavior still needs direct coverage
 - full browser recording flow E2E
 - more end-to-end delete/retry lifecycle coverage
 - no checked-in formal load benchmark yet, despite the capacity guidance in `docs/system.md`
@@ -49,9 +49,8 @@ Highest-risk gaps:
 
 ### 1. Queue and workflow resilience
 
-- add tests for reclaim / expired leases / terminal failure transitions
 - expand delete + retry lifecycle coverage beyond current focused unit tests
-- decide whether `WORKER_CLAIM_BATCH_SIZE` should be used or removed
+- `WORKER_CLAIM_BATCH_SIZE` is now explicitly reserved/dormant in `packages/config` and ignored by the claim path; a separate `WORKER_RECLAIM_BATCH_SIZE` caps the reclaim tick. Revisit if/when the claim loop switches to batch claiming.
 
 ### 2. Frontend quality
 

@@ -18,27 +18,26 @@ services:
       timeout: 3s
       retries: 20
 
-  # Runs all pending SQL migrations once on every stack startup.
-  # web-api and worker wait for this to complete before starting.
+  # Runs pending SQL migrations once on every stack startup using the
+  # transactional Node runner in packages/db/scripts/migrate.mjs. The runner
+  # tracks applied versions in the `schema_migrations` table, wraps each
+  # migration in a transaction, and is safe to re-run idempotently.
   migrate:
-    image: postgres:16-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cap5-migrate:prod
     # container_name: cap5-migrate
     restart: "no"
     env_file:
       - .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL}
+      MIGRATIONS_DIR: /workspace/db/migrations
     volumes:
-      - ./db/migrations:/migrations:ro
-    entrypoint:
-      - sh
-      - -c
-      - |
-        for f in /migrations/*.sql; do
-          echo "Applying $$f ..."
-          psql "$$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$$f" || exit 1
-        done
-        echo "All migrations applied."
+      - ./db/migrations:/workspace/db/migrations:ro
+    command: pnpm --filter @cap/db migrate
     depends_on:
       postgres:
         condition: service_healthy

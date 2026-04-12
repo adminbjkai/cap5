@@ -15,8 +15,16 @@ export type TranscriptStateOptions = {
   onSaveSpeakerLabels: (labels: Record<string, string>) => Promise<boolean>;
   onSeekToSeconds: (seconds: number) => void;
   playbackTimeSeconds: number;
-  onHiddenSpeakersChange?: (hiddenSpeakers: Set<number>) => void;
+  onSpeakerSelectionChange?: (selection: {
+    selectedSpeakerIds: Set<number>;
+    hiddenSpeakers: Set<number>;
+    speakerIds: number[];
+    allSpeakersDeselected: boolean;
+    speakerFilteringActive: boolean;
+  }) => void;
 };
+
+const SPEAKER_SELECTION_STORAGE_PREFIX = 'cap5:selected-speakers:';
 
 export function useTranscriptState({
   videoId,
@@ -25,7 +33,7 @@ export function useTranscriptState({
   onSaveSpeakerLabels,
   onSeekToSeconds,
   playbackTimeSeconds,
-  onHiddenSpeakersChange,
+  onSpeakerSelectionChange,
 }: TranscriptStateOptions) {
   // ── Edit & copy feedback ──────────────────────────────────────────────
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
@@ -51,7 +59,7 @@ export function useTranscriptState({
   const [speakerLabels, setSpeakerLabels] = useState<Record<string, string>>(() =>
     normalizeSpeakerLabels(transcript?.speakerLabels ?? {})
   );
-  const [hiddenSpeakers, setHiddenSpeakers] = useState<Set<number>>(new Set());
+  const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<Set<number>>(new Set());
   const [editingSpeaker, setEditingSpeaker] = useState<number | null>(null);
   const [editingSpeakerLineIndex, setEditingSpeakerLineIndex] = useState<number | null>(null);
   const [speakerDraft, setSpeakerDraft] = useState('');
@@ -81,8 +89,8 @@ export function useTranscriptState({
               : null,
           confidence,
           speaker:
-            Number.isInteger(Number(segment.speaker)) && Number(segment.speaker) >= 0
-              ? Number(segment.speaker)
+            typeof segment.speaker === 'number' && Number.isInteger(segment.speaker) && segment.speaker >= 0
+              ? segment.speaker
               : null,
         };
       })
@@ -114,6 +122,26 @@ export function useTranscriptState({
     }
     return Array.from(unique.values()).sort((a, b) => a - b);
   }, [transcriptLines]);
+
+  const hiddenSpeakers = useMemo(() => {
+    if (speakerIds.length === 0) return new Set<number>();
+    const hidden = new Set<number>();
+    const selected = selectedSpeakerIds;
+    for (const speaker of speakerIds) {
+      if (!selected.has(speaker)) hidden.add(speaker);
+    }
+    return hidden;
+  }, [selectedSpeakerIds, speakerIds]);
+
+  const selectedSpeakerCount = selectedSpeakerIds.size;
+  const allSpeakersDeselected = speakerIds.length > 0 && selectedSpeakerCount === 0;
+  const speakerFilteringActive = speakerIds.length > 0 && selectedSpeakerCount < speakerIds.length;
+  const speakerSelectionSummary = useMemo(() => {
+    if (speakerIds.length === 0) return null;
+    if (allSpeakersDeselected) return 'None selected';
+    if (!speakerFilteringActive) return 'All selected';
+    return `${selectedSpeakerCount} of ${speakerIds.length} selected`;
+  }, [allSpeakersDeselected, selectedSpeakerCount, speakerFilteringActive, speakerIds.length]);
 
   const confidenceStats = useMemo(() => {
     const withConfidence = transcriptLines.filter(line => line.confidence !== null);
@@ -168,18 +196,63 @@ export function useTranscriptState({
   }, [transcript?.speakerLabels]);
 
   useEffect(() => {
-    setHiddenSpeakers(prev => {
-      if (speakerIds.length === 0) return new Set();
+    if (!videoId) {
+      setSelectedSpeakerIds(new Set(speakerIds));
+      return;
+    }
+
+    if (speakerIds.length === 0) {
+      setSelectedSpeakerIds(new Set());
+      return;
+    }
+
+    const storageKey = `${SPEAKER_SELECTION_STORAGE_PREFIX}${videoId}`;
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) {
+      setSelectedSpeakerIds(new Set(speakerIds));
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      const validStoredIds = Array.isArray(parsed)
+        ? parsed
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value))
+        : [];
       const allowed = new Set(speakerIds);
       const next = new Set<number>();
-      for (const speaker of prev) { if (allowed.has(speaker)) next.add(speaker); }
-      return next;
-    });
-  }, [speakerIds]);
+      for (const speaker of validStoredIds) {
+        if (allowed.has(speaker)) next.add(speaker);
+      }
+      setSelectedSpeakerIds(next);
+    } catch {
+      setSelectedSpeakerIds(new Set(speakerIds));
+    }
+  }, [videoId, speakerIds]);
 
   useEffect(() => {
-    onHiddenSpeakersChange?.(new Set(hiddenSpeakers));
-  }, [hiddenSpeakers, onHiddenSpeakersChange]);
+    if (!videoId || speakerIds.length === 0) return;
+    const storageKey = `${SPEAKER_SELECTION_STORAGE_PREFIX}${videoId}`;
+    window.localStorage.setItem(storageKey, JSON.stringify(Array.from(selectedSpeakerIds.values()).sort((a, b) => a - b)));
+  }, [videoId, selectedSpeakerIds, speakerIds.length]);
+
+  useEffect(() => {
+    onSpeakerSelectionChange?.({
+      selectedSpeakerIds: new Set(selectedSpeakerIds),
+      hiddenSpeakers: new Set(hiddenSpeakers),
+      speakerIds: [...speakerIds],
+      allSpeakersDeselected,
+      speakerFilteringActive,
+    });
+  }, [
+    allSpeakersDeselected,
+    hiddenSpeakers,
+    onSpeakerSelectionChange,
+    selectedSpeakerIds,
+    speakerFilteringActive,
+    speakerIds,
+  ]);
 
   useEffect(() => {
     if (!isEditing) { setDraftText(transcriptText); setSaveError(null); }
@@ -261,7 +334,7 @@ export function useTranscriptState({
   }, [speakerLabels]);
 
   const toggleSpeakerVisibility = useCallback((speaker: number) => {
-    setHiddenSpeakers(prev => {
+    setSelectedSpeakerIds(prev => {
       const next = new Set(prev);
       if (next.has(speaker)) next.delete(speaker);
       else next.add(speaker);
@@ -415,7 +488,12 @@ export function useTranscriptState({
     isReviewMode,
     reviewIndex,
     speakerLabels,
+    selectedSpeakerIds,
     hiddenSpeakers,
+    selectedSpeakerCount,
+    allSpeakersDeselected,
+    speakerFilteringActive,
+    speakerSelectionSummary,
     editingSpeaker,
     editingSpeakerLineIndex,
     speakerDraft,

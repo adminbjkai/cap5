@@ -14,7 +14,13 @@ type TranscriptCardProps = {
   onSeekToSeconds: (seconds: number) => void;
   onSaveTranscript: (text: string) => Promise<boolean>;
   onSaveSpeakerLabels: (labels: Record<string, string>) => Promise<boolean>;
-  onHiddenSpeakersChange?: (hiddenSpeakers: Set<number>) => void;
+  onSpeakerSelectionChange?: (selection: {
+    selectedSpeakerIds: Set<number>;
+    hiddenSpeakers: Set<number>;
+    speakerIds: number[];
+    allSpeakersDeselected: boolean;
+    speakerFilteringActive: boolean;
+  }) => void;
   /** When true, omits the outer card wrapper — for embedding in the right rail */
   compact?: boolean;
 };
@@ -28,7 +34,7 @@ export function TranscriptCard({
   onSeekToSeconds,
   onSaveTranscript,
   onSaveSpeakerLabels,
-  onHiddenSpeakersChange,
+  onSpeakerSelectionChange,
   compact = false,
 }: TranscriptCardProps) {
   const {
@@ -69,6 +75,9 @@ export function TranscriptCard({
     activeLineIndex,
     getSpeakerLabel,
     toggleSpeakerVisibility,
+    allSpeakersDeselected,
+    speakerFilteringActive,
+    speakerSelectionSummary,
     startSpeakerEdit,
     cancelSpeakerEdit,
     saveSpeakerLabel,
@@ -87,7 +96,7 @@ export function TranscriptCard({
     onSaveSpeakerLabels,
     onSeekToSeconds,
     playbackTimeSeconds,
-    onHiddenSpeakersChange,
+    onSpeakerSelectionChange,
   });
 
   const Inner = (
@@ -135,6 +144,9 @@ export function TranscriptCard({
             onToggleReviewMode={toggleReviewMode}
             onNavigateReview={navigateReview}
             speakerIds={speakerIds}
+            allSpeakersDeselected={allSpeakersDeselected}
+            speakerFilteringActive={speakerFilteringActive}
+            speakerSelectionSummary={speakerSelectionSummary}
             hiddenSpeakers={hiddenSpeakers}
             getSpeakerLabel={(speaker) => getSpeakerLabel(speaker) ?? ''}
             onToggleSpeakerVisibility={toggleSpeakerVisibility}

@@ -72,8 +72,11 @@ Local env overrides (set in `.env` or export):
 
 ```bash
 DATABASE_URL=postgres://app:app@localhost:5432/cap5
-S3_ENDPOINT=http://localhost:9000
-S3_PUBLIC_ENDPOINT=http://localhost:9000
+# When running host-side against docker-compose MinIO, both the internal and
+# public endpoints are the host-mapped port (8922). Inside the compose network,
+# S3_ENDPOINT is the docker hostname (http://minio:9000) instead.
+S3_ENDPOINT=http://localhost:8922
+S3_PUBLIC_ENDPOINT=http://localhost:8922
 MEDIA_SERVER_BASE_URL=http://localhost:3100
 ```
 
@@ -124,7 +127,8 @@ Canonical sources:
 | `WORKER_POLL_MS` | 2000 | Poll interval between claim attempts |
 | `WORKER_HEARTBEAT_MS` | 15000 | Heartbeat interval to extend lease |
 | `WORKER_RECLAIM_MS` | 10000 | Interval to reclaim expired leases |
-| `WORKER_CLAIM_BATCH_SIZE` | 5 | Exists in config but loop claims one at a time |
+| `WORKER_CLAIM_BATCH_SIZE` | 5 | Reserved/dormant — loop claims one job per tick; kept for forward compatibility |
+| `WORKER_RECLAIM_BATCH_SIZE` | 25 | LIMIT on the reclaim-expired-leases tick |
 
 ### Provider config
 

@@ -24,6 +24,9 @@ export function TranscriptControls({
   onToggleReviewMode,
   onNavigateReview,
   speakerIds,
+  allSpeakersDeselected,
+  speakerFilteringActive,
+  speakerSelectionSummary,
   hiddenSpeakers,
   getSpeakerLabel,
   onToggleSpeakerVisibility,
@@ -49,6 +52,9 @@ export function TranscriptControls({
   onToggleReviewMode: () => void;
   onNavigateReview: (direction: "prev" | "next") => void;
   speakerIds: number[];
+  allSpeakersDeselected: boolean;
+  speakerFilteringActive: boolean;
+  speakerSelectionSummary: string | null;
   hiddenSpeakers: Set<number>;
   getSpeakerLabel: (speaker: number) => string | null;
   onToggleSpeakerVisibility: (speaker: number) => void;
@@ -186,6 +192,11 @@ export function TranscriptControls({
       {speakerIds.length > 0 && (
         <div className={`flex flex-wrap items-center gap-1.5 ${compact ? "px-2.5 pb-2" : "mb-3"}`}>
           <span className="text-[11px] font-medium text-muted">Speakers:</span>
+          {speakerSelectionSummary && (
+            <span className="text-[11px] text-muted">
+              {speakerSelectionSummary}
+            </span>
+          )}
           {speakerIds.map((speaker) => {
             const isHidden = hiddenSpeakers.has(speaker);
             return (
@@ -204,6 +215,16 @@ export function TranscriptControls({
               </button>
             );
           })}
+          {speakerFilteringActive && !allSpeakersDeselected && (
+            <span className="text-[11px] text-muted">
+              Playing selected speakers only.
+            </span>
+          )}
+          {allSpeakersDeselected && (
+            <span className="text-[11px] font-medium text-amber-700">
+              No speakers selected.
+            </span>
+          )}
         </div>
       )}
 

@@ -25,7 +25,8 @@ export {
 // ---------------------------------------------------------------------------
 
 export function getS3ClientAndBucket() {
-  const publicEndpoint = process.env.S3_PUBLIC_ENDPOINT ?? "http://localhost:9000";
+  // Default aligned with packages/config (host-mapped MinIO API port in docker-compose).
+  const publicEndpoint = process.env.S3_PUBLIC_ENDPOINT ?? "http://localhost:8922";
   const signingEndpoint = publicEndpoint;
   const region = process.env.S3_REGION ?? "us-east-1";
   const accessKeyId = process.env.S3_ACCESS_KEY;
