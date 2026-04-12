@@ -41,6 +41,9 @@ Completed in the actual repo during this pass:
 - right-rail tab rendering hardening for cross-browser panel isolation
 - speaker-synced playback filtering feature refined into selected-speaker-sequence playback
 - collapsible sidebar (localStorage-persisted, smooth CSS transition, icon-only collapsed state)
+- library title search with instant client-side filtering
+- library from/to date range picker filter
+- video creation timestamp on library cards and watch page header
 
 ## Execution principles
 

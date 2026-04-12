@@ -14,8 +14,6 @@ import { buildPublicObjectUrl, formatDuration } from '../lib/format';
 
 type LibrarySort = 'date_desc' | 'name_asc' | 'duration_desc';
 type LibraryFilter = 'all' | 'processing' | 'complete' | 'failed';
-type DateRange = 'all' | 'today' | 'week' | 'month' | 'quarter';
-
 export function HomePage() {
   const [libraryItems, setLibraryItems] = useState<LibraryVideoCard[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -30,7 +28,8 @@ export function HomePage() {
   const [sortBy, setSortBy] = useState<LibrarySort>('date_desc');
   const [filterBy, setFilterBy] = useState<LibraryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [deletingVideoIds, setDeletingVideoIds] = useState<string[]>([]);
   const loadingSkeletonCount = 8;
 
@@ -145,22 +144,15 @@ export function HomePage() {
     }
   };
 
-  const dateRangeStart = (() => {
-    const now = new Date();
-    if (dateRange === 'today') {
-      const d = new Date(now); d.setHours(0, 0, 0, 0); return d;
-    }
-    if (dateRange === 'week') { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
-    if (dateRange === 'month') { const d = new Date(now); d.setMonth(d.getMonth() - 1); return d; }
-    if (dateRange === 'quarter') { const d = new Date(now); d.setMonth(d.getMonth() - 3); return d; }
-    return null;
-  })();
-
   const q = searchQuery.trim().toLowerCase();
+  const dateFromMs = dateFrom ? new Date(dateFrom + 'T00:00:00').getTime() : null;
+  const dateToMs = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : null;
   const filteredItems = libraryItems.filter(item => {
     if (filterBy !== 'all' && phaseBucket(item.processingPhase) !== filterBy) return false;
     if (q && !item.displayTitle.toLowerCase().includes(q)) return false;
-    if (dateRangeStart && new Date(item.createdAt) < dateRangeStart) return false;
+    const ts = new Date(item.createdAt).getTime();
+    if (dateFromMs && ts < dateFromMs) return false;
+    if (dateToMs && ts > dateToMs) return false;
     return true;
   });
   const visibleItems = [...filteredItems].sort((a, b) => {
@@ -231,18 +223,33 @@ export function HomePage() {
                 <option value="complete">Complete</option>
                 <option value="failed">Failed</option>
               </select>
-              <select
-                aria-label="Filter by date range"
-                value={dateRange}
-                onChange={event => setDateRange(event.target.value as DateRange)}
-                className="input-control h-9 w-auto min-w-[10rem] px-3 py-1.5 text-xs font-semibold"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">Last 7 Days</option>
-                <option value="month">Last 30 Days</option>
-                <option value="quarter">Last 3 Months</option>
-              </select>
+              <div className="flex items-center gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">From</label>
+                <input
+                  type="date"
+                  aria-label="Filter from date"
+                  value={dateFrom}
+                  onChange={event => setDateFrom(event.target.value)}
+                  className="input-control h-9 w-auto px-2 py-1.5 text-xs font-semibold"
+                />
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">To</label>
+                <input
+                  type="date"
+                  aria-label="Filter to date"
+                  value={dateTo}
+                  onChange={event => setDateTo(event.target.value)}
+                  className="input-control h-9 w-auto px-2 py-1.5 text-xs font-semibold"
+                />
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => { setDateFrom(''); setDateTo(''); }}
+                    aria-label="Clear date filter"
+                    className="text-[10px] font-medium text-muted hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               <button
                 onClick={() => void refreshLibrary()}
                 className="text-xs font-medium hover:underline text-muted"

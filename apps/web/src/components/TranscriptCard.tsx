@@ -100,7 +100,7 @@ export function TranscriptCard({
   });
 
   const Inner = (
-    <div>
+    <div className={compact ? 'flex h-full min-h-0 flex-col' : ''}>
       {/* Header — hidden in compact mode (VideoPage rail header handles it) */}
       {!compact && (
         <div className="mb-3 flex items-center justify-between gap-2">
@@ -120,7 +120,7 @@ export function TranscriptCard({
       />
 
       {transcriptionStatus === 'complete' && transcriptText.length > 0 && (
-        <div className={compact ? '' : 'space-y-3'}>
+        <div className={compact ? 'flex min-h-0 flex-1 flex-col' : 'space-y-3'}>
           <TranscriptControls
             compact={compact}
             isEditing={isEditing}
@@ -170,7 +170,7 @@ export function TranscriptCard({
               }}
             />
           ) : transcriptLines.length > 0 ? (
-            <div ref={transcriptScrollRef}>
+            <div ref={transcriptScrollRef} className={compact ? 'min-h-0 flex-1 overflow-y-auto' : ''}>
               <TranscriptLines
                 compact={compact}
                 transcriptLines={transcriptLines}

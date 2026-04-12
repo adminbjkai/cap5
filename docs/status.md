@@ -19,6 +19,9 @@ What works:
 - stabilized right-rail tab rendering to prevent overlapping panel content across browsers
 - speaker filtering now live-syncs transcript visibility with selected-speaker-sequence playback
 - collapsible sidebar with localStorage persistence for more content real estate
+- library search by video title (instant client-side filtering)
+- library date range filter with from/to date pickers
+- video creation time displayed on library cards and watch page header
 
 What is still rough:
 
