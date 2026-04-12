@@ -46,12 +46,19 @@ export function HomePage() {
     return phase ? (labels[phase] ?? phase) : 'Queued';
   };
 
-  const dateLabel = (iso: string) =>
-    new Date(iso).toLocaleDateString(undefined, {
+  const dateLabel = (iso: string) => {
+    const d = new Date(iso);
+    const date = d.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
+    const time = d.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return `${date} at ${time}`;
+  };
   const phaseBucket = (phase?: string | null): LibraryFilter => {
     if (
       !phase ||

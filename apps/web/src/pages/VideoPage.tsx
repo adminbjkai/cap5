@@ -366,6 +366,7 @@ export function VideoPage() {
           isProcessing,
           processingPhase: status?.processingPhase,
           processingProgress: status?.processingProgress,
+          createdAt: status?.createdAt ?? null,
           lastUpdatedAt,
           errorMessage,
           jobStatusLabel: jobStatus?.status ?? null,

@@ -23,6 +23,7 @@ export type VideoPageHeaderVideoProps = {
   isProcessing: boolean;
   processingPhase: VideoStatusResponse["processingPhase"] | undefined;
   processingProgress: number | null | undefined;
+  createdAt: string | null;
   lastUpdatedAt: string | null;
   errorMessage: string | null;
   jobStatusLabel: string | null;
@@ -72,7 +73,8 @@ export function VideoPageHeader({ titleProps, videoProps, uiProps, actionProps }
     isProcessing,
     processingPhase,
     processingProgress,
-    lastUpdatedAt,
+    createdAt,
+    // lastUpdatedAt kept in props for future use (e.g. polling indicator)
     errorMessage,
     jobStatusLabel,
   } = videoProps;
@@ -174,7 +176,20 @@ export function VideoPageHeader({ titleProps, videoProps, uiProps, actionProps }
             {processingPhase === "failed" && (
               <span className="status-chip status-chip-danger">Failed</span>
             )}
-            {lastUpdatedAt && <span>Updated {new Date(lastUpdatedAt).toLocaleTimeString()}</span>}
+            {createdAt && (
+              <span>
+                Created{' '}
+                {new Date(createdAt).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}{' '}
+                at {new Date(createdAt).toLocaleTimeString(undefined, {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
+              </span>
+            )}
           </div>
         </div>
 

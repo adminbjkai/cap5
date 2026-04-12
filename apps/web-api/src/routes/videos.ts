@@ -184,6 +184,7 @@ export async function videoRoutes(app: FastifyInstance) {
       ai_entities_json: unknown;
       ai_action_items_json: unknown;
       ai_quotes_json: unknown;
+      created_at: string;
       operator_notes: string | null;
       transcription_dead_error: string | null;
       ai_dead_error: string | null;
@@ -192,6 +193,7 @@ export async function videoRoutes(app: FastifyInstance) {
       `SELECT
          v.id,
          v.name,
+         v.created_at,
          v.processing_phase,
          v.processing_progress,
          v.result_key,
@@ -255,6 +257,7 @@ export async function videoRoutes(app: FastifyInstance) {
     return reply.send({
       videoId: row.id,
       name: row.name,
+      createdAt: row.created_at,
       processingPhase: row.processing_phase,
       processingProgress: row.processing_progress,
       resultKey: row.result_key,

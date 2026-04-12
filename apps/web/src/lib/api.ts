@@ -42,6 +42,7 @@ export type MultipartCompleteResponse = {
 export type VideoStatusResponse = {
   videoId: string;
   name: string;
+  createdAt: string;
   processingPhase: string;
   processingProgress: number;
   resultKey: string | null;
