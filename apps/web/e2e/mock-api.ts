@@ -20,16 +20,20 @@ export const MOCK_VIDEO_STATUS = {
     language: "en",
     vttKey: "cap5/00000000-0000-0000-0000-000000000001/transcript.vtt",
     text: "Welcome to this demonstration. Today we cover API architecture. Let us begin with the basics.",
+    speakerLabels: {
+      "0": "Host",
+      "1": "Guest",
+    },
     segments: [
-      { startSeconds: 0, endSeconds: 5, text: "Welcome to this demonstration." },
-      { startSeconds: 5, endSeconds: 12, text: "Today we cover API architecture." },
-      { startSeconds: 12, endSeconds: 20, text: "Let us begin with the basics." },
-      { startSeconds: 20, endSeconds: 28, text: "First, we define our endpoints clearly." },
-      { startSeconds: 28, endSeconds: 36, text: "Authentication is the next consideration." },
-      { startSeconds: 36, endSeconds: 44, text: "We use JSON web tokens for auth." },
-      { startSeconds: 44, endSeconds: 52, text: "Rate limiting protects against abuse." },
-      { startSeconds: 52, endSeconds: 60, text: "Finally, logging ties everything together." },
-      { startSeconds: 60, endSeconds: 68, text: "In summary, good APIs require planning." }
+      { startSeconds: 0, endSeconds: 5, text: "Welcome to this demonstration.", speaker: 0 },
+      { startSeconds: 5, endSeconds: 12, text: "Today we cover API architecture.", speaker: 1 },
+      { startSeconds: 12, endSeconds: 20, text: "Let us begin with the basics.", speaker: null },
+      { startSeconds: 20, endSeconds: 28, text: "First, we define our endpoints clearly.", speaker: 0 },
+      { startSeconds: 28, endSeconds: 36, text: "Authentication is the next consideration.", speaker: 1 },
+      { startSeconds: 36, endSeconds: 44, text: "We use JSON web tokens for auth.", speaker: 0 },
+      { startSeconds: 44, endSeconds: 52, text: "Rate limiting protects against abuse.", speaker: 1 },
+      { startSeconds: 52, endSeconds: 60, text: "Finally, logging ties everything together.", speaker: 0 },
+      { startSeconds: 60, endSeconds: 68, text: "In summary, good APIs require planning.", speaker: 1 }
     ]
   },
   aiOutput: {

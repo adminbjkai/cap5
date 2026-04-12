@@ -65,7 +65,7 @@ export function VideoPage() {
   /* ── Store ───────────────────────────────────────────────────────────── */
   const {
     status, jobStatus, loading, errorMessage, consecutivePollFailures, lastUpdatedAt,
-    playbackTimeSeconds, videoDurationSeconds: _videoDurationSeconds, seekRequest,
+    playbackTimeSeconds, videoDurationSeconds, seekRequest,
     copyFeedback, isTitleEditing, titleDraft, isSavingTitle, titleSaveMessage,
     isRetrying, retryMessage, isDeleteDialogOpen, isDeleting, isDeleted, deleteError,
     isSummaryExpanded, railTab,
@@ -89,7 +89,19 @@ export function VideoPage() {
     () => deriveVideoChapters(status?.aiOutput, transcriptSegments),
     [status?.aiOutput, transcriptSegments],
   );
-  const [hiddenSpeakers, setHiddenSpeakers] = useState<Set<number>>(new Set());
+  const [speakerSelection, setSpeakerSelection] = useState<{
+    selectedSpeakerIds: Set<number>;
+    hiddenSpeakers: Set<number>;
+    speakerIds: number[];
+    allSpeakersDeselected: boolean;
+    speakerFilteringActive: boolean;
+  }>({
+    selectedSpeakerIds: new Set(),
+    hiddenSpeakers: new Set(),
+    speakerIds: [],
+    allSpeakersDeselected: false,
+    speakerFilteringActive: false,
+  });
 
   const summaryText = status?.aiOutput?.summary?.trim() ?? "";
   const hasSummaryStrip = summaryText.length > 0;
@@ -284,7 +296,7 @@ export function VideoPage() {
         onSeekToSeconds={requestSeek}
         onSaveTranscript={saveTranscript}
         onSaveSpeakerLabels={saveSpeakerLabels}
-        onHiddenSpeakersChange={setHiddenSpeakers}
+        onSpeakerSelectionChange={setSpeakerSelection}
         compact
       />
     );
@@ -389,7 +401,9 @@ export function VideoPage() {
               chapters={chapters}
               onSeekToSeconds={requestSeek}
               transcriptSegments={status?.transcript?.segments ?? []}
-              hiddenSpeakers={hiddenSpeakers}
+              selectedSpeakerIds={speakerSelection.selectedSpeakerIds}
+              speakerFilteringActive={speakerSelection.speakerFilteringActive}
+              allSpeakersDeselected={speakerSelection.allSpeakersDeselected}
             />
           )}
         </div>
@@ -416,7 +430,7 @@ export function VideoPage() {
           <ChapterListInline
             chapters={chapters}
             currentSeconds={playbackTimeSeconds}
-            durationSeconds={_videoDurationSeconds}
+            durationSeconds={videoDurationSeconds}
             onSeek={requestSeek}
           />
         </div>

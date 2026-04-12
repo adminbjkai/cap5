@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTimestamp } from "../lib/format";
 import { CustomVideoControls } from "./CustomVideoControls";
+import {
+  buildPlayableSpeakerRanges,
+  getPlaybackCorrection,
+  DEFAULT_SEGMENT_START_PADDING_SECONDS,
+  DEFAULT_SEGMENT_END_PADDING_SECONDS,
+  type SpeakerPlaybackSegment,
+} from "./player-card/playbackFilter";
 
 type SeekRequest = { seconds: number; requestId: number };
 type ChapterItem  = { title: string; seconds: number };
-type TranscriptSegment = {
-  startSeconds?: number;
-  endSeconds?: number;
-  speaker?: number | null;
-};
-
-const SEGMENT_START_PADDING_SECONDS = 0.08;
-const SEGMENT_END_PADDING_SECONDS = 0.12;
-const SEGMENT_MERGE_GAP_SECONDS = 0.08;
-const PLAYBACK_GUARD_INTERVAL_MS = 40;
+const PLAYBACK_GUARD_INTERVAL_MS = 120;
 
 const SPEAKER_PALETTE = [
   "#0ea5e9",
@@ -35,7 +33,9 @@ export function PlayerCard({
   chapters,
   onSeekToSeconds,
   transcriptSegments,
-  hiddenSpeakers,
+  selectedSpeakerIds,
+  speakerFilteringActive,
+  allSpeakersDeselected,
 }: {
   videoUrl: string | null;
   thumbnailUrl: string | null;
@@ -44,8 +44,10 @@ export function PlayerCard({
   onDurationChange?: (seconds: number) => void;
   chapters: ChapterItem[];
   onSeekToSeconds: (seconds: number) => void;
-  transcriptSegments: TranscriptSegment[];
-  hiddenSpeakers: Set<number>;
+  transcriptSegments: SpeakerPlaybackSegment[];
+  selectedSpeakerIds: Set<number>;
+  speakerFilteringActive: boolean;
+  allSpeakersDeselected: boolean;
 }) {
   const [playbackTimeSeconds, setPlaybackTimeSeconds] = useState(0);
   const [durationSeconds,     setDurationSeconds]     = useState(0);
@@ -62,6 +64,11 @@ export function PlayerCard({
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const trackRef     = useRef<HTMLDivElement | null>(null);
   const lastAutoSkipRef = useRef<{ from: number; to: number; atMs: number } | null>(null);
+
+  const syncPlaybackTime = useCallback((seconds: number) => {
+    setPlaybackTimeSeconds(seconds);
+    onPlaybackTimeChange?.(seconds);
+  }, [onPlaybackTimeChange]);
 
   /* ── Derived values ───────────────────────────────────────────────────── */
   const hasResult   = Boolean(videoUrl);
@@ -81,11 +88,13 @@ export function PlayerCard({
         const fallbackEnd = startSeconds + 0.25;
         const rawEnd = Number(segment.endSeconds);
         const endSeconds = Number.isFinite(rawEnd) ? rawEnd : fallbackEnd;
-        const speaker = Number(segment.speaker);
+        const speaker = typeof segment.speaker === "number" && Number.isInteger(segment.speaker) && segment.speaker >= 0
+          ? segment.speaker
+          : null;
         if (!Number.isFinite(startSeconds) || !Number.isFinite(endSeconds)) return null;
-        if (!Number.isInteger(speaker) || speaker < 0) return null;
-        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds - SEGMENT_START_PADDING_SECONDS));
-        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds + SEGMENT_END_PADDING_SECONDS));
+        if (speaker === null) return null;
+        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds - DEFAULT_SEGMENT_START_PADDING_SECONDS));
+        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds + DEFAULT_SEGMENT_END_PADDING_SECONDS));
         if (safeEnd <= safeStart) return null;
         return { startSeconds: safeStart, endSeconds: safeEnd, speaker };
       })
@@ -101,123 +110,79 @@ export function PlayerCard({
     }));
   }, [durationSeconds, transcriptSegments]);
 
-  const allowedSpeakerRanges = useMemo(() => {
-    if (durationSeconds <= 0) return [] as Array<{ startSeconds: number; endSeconds: number }>;
+  const playableSpeakerRanges = useMemo(() => buildPlayableSpeakerRanges({
+    durationSeconds,
+    transcriptSegments,
+    selectedSpeakerIds,
+    speakerFilteringActive,
+  }), [durationSeconds, transcriptSegments, selectedSpeakerIds, speakerFilteringActive]);
 
-    const rawSegments = (Array.isArray(transcriptSegments) ? transcriptSegments : [])
-      .map((segment) => {
-        const speaker = Number(segment.speaker);
-        if (!Number.isInteger(speaker) || speaker < 0) return null;
-        if (hiddenSpeakers.has(speaker)) return null;
+  const enforcePlaybackFilter = useCallback((source: "filter-change" | "timeupdate" | "guard" | "seek" | "play" | "seeked") => {
+    const player = videoRef.current;
+    if (!player) return null;
 
-        const startSeconds = Number(segment.startSeconds);
-        const rawEnd = Number(segment.endSeconds);
-        if (!Number.isFinite(startSeconds)) return null;
-
-        const fallbackEnd = startSeconds + 0.25;
-        const endSeconds = Number.isFinite(rawEnd) ? rawEnd : fallbackEnd;
-        const safeStart = Math.max(0, Math.min(durationSeconds, startSeconds - SEGMENT_START_PADDING_SECONDS));
-        const safeEnd = Math.max(safeStart, Math.min(durationSeconds, endSeconds + SEGMENT_END_PADDING_SECONDS));
-        if (safeEnd <= safeStart) return null;
-
-        return { startSeconds: safeStart, endSeconds: safeEnd };
-      })
-      .filter((segment): segment is { startSeconds: number; endSeconds: number } => Boolean(segment))
-      .sort((a, b) => a.startSeconds - b.startSeconds);
-
-    if (rawSegments.length <= 1) return rawSegments;
-
-    const merged: Array<{ startSeconds: number; endSeconds: number }> = [];
-    for (const range of rawSegments) {
-      const previous = merged[merged.length - 1];
-      if (!previous || range.startSeconds > previous.endSeconds + SEGMENT_MERGE_GAP_SECONDS) {
-        merged.push({ ...range });
-      } else {
-        previous.endSeconds = Math.max(previous.endSeconds, range.endSeconds);
-      }
+    if (allSpeakersDeselected) {
+      if (!player.paused) player.pause();
+      return null;
     }
 
-    return merged;
-  }, [durationSeconds, transcriptSegments, hiddenSpeakers]);
+    if (!speakerFilteringActive) return null;
 
-  const getNextAllowedPlaybackPosition = useCallback((candidateSeconds: number): number | null => {
-    if (allowedSpeakerRanges.length === 0) return null;
-    const current = Math.max(0, candidateSeconds);
+    const nextAllowed = getPlaybackCorrection(player.currentTime, playableSpeakerRanges);
+    if (nextAllowed === null) return null;
 
-    for (const range of allowedSpeakerRanges) {
-      if (current < range.startSeconds) {
-        return range.startSeconds;
-      }
-      if (current >= range.startSeconds && current <= range.endSeconds) {
-        return null;
-      }
+    const lastSkip = lastAutoSkipRef.current;
+    const now = Date.now();
+    if (
+      source !== "seek"
+      && source !== "filter-change"
+      && lastSkip
+      && Math.abs(lastSkip.from - player.currentTime) <= 0.03
+      && Math.abs(lastSkip.to - nextAllowed) <= 0.03
+      && now - lastSkip.atMs <= 200
+    ) {
+      return null;
     }
 
-    return null;
-  }, [allowedSpeakerRanges]);
-
-  const getCurrentAllowedRangeEnd = useCallback((candidateSeconds: number): number | null => {
-    if (allowedSpeakerRanges.length === 0) return null;
-    const current = Math.max(0, candidateSeconds);
-
-    for (const range of allowedSpeakerRanges) {
-      if (current < range.startSeconds) return null;
-      if (current >= range.startSeconds && current <= range.endSeconds) {
-        return range.endSeconds;
-      }
-    }
-
-    return null;
-  }, [allowedSpeakerRanges]);
+    lastAutoSkipRef.current = { from: player.currentTime, to: nextAllowed, atMs: now };
+    player.currentTime = nextAllowed;
+    syncPlaybackTime(nextAllowed);
+    return nextAllowed;
+  }, [allSpeakersDeselected, playableSpeakerRanges, speakerFilteringActive, syncPlaybackTime]);
 
   useEffect(() => {
     const player = videoRef.current;
     if (!player) return;
 
-    const nextAllowed = getNextAllowedPlaybackPosition(player.currentTime);
-    if (nextAllowed === null) return;
+    if (allSpeakersDeselected) {
+      if (!player.paused) player.pause();
+      return;
+    }
 
-    player.currentTime = nextAllowed;
-    setPlaybackTimeSeconds(nextAllowed);
-    onPlaybackTimeChange?.(nextAllowed);
-  }, [hiddenSpeakers, getCurrentAllowedRangeEnd, getNextAllowedPlaybackPosition, onPlaybackTimeChange]);
-
+    enforcePlaybackFilter("filter-change");
+  }, [allSpeakersDeselected, enforcePlaybackFilter]);
 
   useEffect(() => {
     const player = videoRef.current;
-    if (!player || hiddenSpeakers.size === 0) return;
+    if (!player || !speakerFilteringActive || allSpeakersDeselected) return;
 
     const guardPlayback = () => {
       if (player.paused || player.seeking || player.ended) return;
-
-      const currentTime = player.currentTime;
-      const currentAllowedEnd = getCurrentAllowedRangeEnd(currentTime);
-      const nextAllowed = getNextAllowedPlaybackPosition(currentTime);
-      const shouldAdvance = nextAllowed !== null && (currentAllowedEnd === null || currentTime > currentAllowedEnd - 0.015);
-      if (!shouldAdvance) return;
-
-      const lastSkip = lastAutoSkipRef.current;
-      const now = Date.now();
-      if (!lastSkip || Math.abs(lastSkip.from - currentTime) > 0.03 || Math.abs(lastSkip.to - nextAllowed) > 0.03 || now - lastSkip.atMs > 200) {
-        lastAutoSkipRef.current = { from: currentTime, to: nextAllowed, atMs: now };
-        player.currentTime = nextAllowed;
-        setPlaybackTimeSeconds(nextAllowed);
-        onPlaybackTimeChange?.(nextAllowed);
-      }
+      enforcePlaybackFilter("guard");
     };
+    const handlePlay = () => { void enforcePlaybackFilter("play"); };
+    const handleSeeked = () => { void enforcePlaybackFilter("seeked"); };
 
     const interval = window.setInterval(guardPlayback, PLAYBACK_GUARD_INTERVAL_MS);
-    player.addEventListener("seeking", guardPlayback);
-    player.addEventListener("play", guardPlayback);
-    player.addEventListener("seeked", guardPlayback);
+    player.addEventListener("play", handlePlay);
+    player.addEventListener("seeked", handleSeeked);
 
     return () => {
       window.clearInterval(interval);
-      player.removeEventListener("seeking", guardPlayback);
-      player.removeEventListener("play", guardPlayback);
-      player.removeEventListener("seeked", guardPlayback);
+      player.removeEventListener("play", handlePlay);
+      player.removeEventListener("seeked", handleSeeked);
     };
-  }, [hiddenSpeakers, getNextAllowedPlaybackPosition, onPlaybackTimeChange]);
+  }, [allSpeakersDeselected, enforcePlaybackFilter, speakerFilteringActive]);
 
   /* ── Seek on external request ─────────────────────────────────────────── */
   useEffect(() => {
@@ -225,11 +190,15 @@ export function PlayerCard({
     const player = videoRef.current;
     if (!player) return;
     const clamped = Math.max(0, seekRequest.seconds);
-    const nextAllowed = getNextAllowedPlaybackPosition(clamped) ?? clamped;
+    const nextAllowed = !allSpeakersDeselected && speakerFilteringActive
+      ? getPlaybackCorrection(clamped, playableSpeakerRanges) ?? clamped
+      : clamped;
     player.currentTime = nextAllowed;
-    setPlaybackTimeSeconds(nextAllowed);
-    onPlaybackTimeChange?.(nextAllowed);
-  }, [seekRequest, onPlaybackTimeChange, getNextAllowedPlaybackPosition]);
+    syncPlaybackTime(nextAllowed);
+    if (!allSpeakersDeselected) {
+      enforcePlaybackFilter("seek");
+    }
+  }, [allSpeakersDeselected, enforcePlaybackFilter, playableSpeakerRanges, seekRequest, speakerFilteringActive, syncPlaybackTime]);
 
 
 
@@ -253,13 +222,14 @@ export function PlayerCard({
   /* ── Chapter seek helpers ─────────────────────────────────────────────── */
   const handleChapterSeek = useCallback((seconds: number) => {
     const clamped = Math.max(0, seconds);
-    const nextAllowed = getNextAllowedPlaybackPosition(clamped) ?? clamped;
+    const nextAllowed = !allSpeakersDeselected && speakerFilteringActive
+      ? getPlaybackCorrection(clamped, playableSpeakerRanges) ?? clamped
+      : clamped;
     const player  = videoRef.current;
     if (player) player.currentTime = nextAllowed;
-    setPlaybackTimeSeconds(nextAllowed);
-    onPlaybackTimeChange?.(nextAllowed);
+    syncPlaybackTime(nextAllowed);
     onSeekToSeconds(nextAllowed);
-  }, [onPlaybackTimeChange, onSeekToSeconds, getNextAllowedPlaybackPosition]);
+  }, [allSpeakersDeselected, onSeekToSeconds, playableSpeakerRanges, speakerFilteringActive, syncPlaybackTime]);
 
   const goToPrevChapter = () => {
     if (activeChapterIndex <= 0) return;
@@ -353,24 +323,14 @@ export function PlayerCard({
             onTimeUpdate={(e) => {
               const player = e.currentTarget;
               const time = player.currentTime || 0;
-              const currentAllowedEnd = getCurrentAllowedRangeEnd(time);
-              const nextAllowed = getNextAllowedPlaybackPosition(time);
-              const shouldAdvance = nextAllowed !== null && (currentAllowedEnd === null || time > currentAllowedEnd - 0.015);
-
-              if (shouldAdvance) {
-                const lastSkip = lastAutoSkipRef.current;
-                const now = Date.now();
-                if (!lastSkip || Math.abs(lastSkip.from - time) > 0.03 || Math.abs(lastSkip.to - nextAllowed) > 0.03 || now - lastSkip.atMs > 200) {
-                  lastAutoSkipRef.current = { from: time, to: nextAllowed, atMs: now };
-                  player.currentTime = nextAllowed;
-                  setPlaybackTimeSeconds(nextAllowed);
-                  onPlaybackTimeChange?.(nextAllowed);
+              if (speakerFilteringActive && !allSpeakersDeselected) {
+                const corrected = enforcePlaybackFilter("timeupdate");
+                if (corrected !== null) {
                   return;
                 }
               }
 
-              setPlaybackTimeSeconds(time);
-              onPlaybackTimeChange?.(time);
+              syncPlaybackTime(time);
             }}
             onWaiting={() => setIsBuffering(true)}
             onPlaying={() => setIsBuffering(false)}
@@ -385,6 +345,11 @@ export function PlayerCard({
             isBuffering={isBuffering}
             onSeek={handleChapterSeek}
           />
+          {allSpeakersDeselected && (
+            <div className="pointer-events-none absolute inset-x-4 top-4 rounded-lg border border-amber-300 bg-amber-50/95 px-3 py-2 text-sm text-amber-900 shadow-sm">
+              No speakers selected. Re-enable at least one speaker to resume filtered playback.
+            </div>
+          )}
         </div>
       </div>
 
@@ -517,6 +482,11 @@ export function PlayerCard({
                 />
               ))}
             </div>
+          )}
+          {allSpeakersDeselected && (
+            <p className="mt-2 text-xs font-medium text-amber-700">
+              Filtered playback is paused because no speakers are selected.
+            </p>
           )}
 
           {/* Time display + Prev / Next */}
