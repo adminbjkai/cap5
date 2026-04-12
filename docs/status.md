@@ -18,6 +18,7 @@ What works:
 - server-backed operator notes on the watch page
 - stabilized right-rail tab rendering to prevent overlapping panel content across browsers
 - speaker filtering now live-syncs transcript visibility with selected-speaker-sequence playback
+- collapsible sidebar with localStorage persistence for more content real estate
 
 What is still rough:
 

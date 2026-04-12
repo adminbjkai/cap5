@@ -455,7 +455,7 @@ ffprobe -v error -print_format json -show_streams -show_format <file>
 
 ### Key components
 
-- `AppShell` — header, sidebar, main content layout
+- `AppShell` — header, collapsible sidebar (localStorage-persisted), main content layout
 - `PlayerCard` — video player wrapper with custom controls and speaker-aware playback skipping when transcript speaker filters are active
 - `TranscriptCard` — editable transcript with timestamps and speaker labels
 - `SummaryCardCompact` — expandable AI summary
