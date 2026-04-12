@@ -1267,14 +1267,10 @@ body {
     height: 3px;
   }
   .rail-tab-stack {
-    @apply relative min-h-0 flex-1 overflow-hidden;
-    isolation: isolate;
+    @apply relative min-h-0 flex-1 overflow-y-auto;
   }
   .rail-tab-panel {
-    @apply h-full min-h-0 overflow-y-auto;
-    contain: layout paint;
-    backface-visibility: hidden;
-    transform: translateZ(0);
+    @apply min-h-0;
   }
 
   /* Notes tab textarea */
@@ -1356,7 +1352,6 @@ body {
   }
   .page-transition-enter,
   .library-card-reveal,
-  .rail-tab-panel,
   .progress-active-bar,
   .dialog-surface {
     animation: none !important;
