@@ -40,6 +40,7 @@ Completed in the actual repo during this pass:
 - server-backed operator notes feature
 - right-rail tab rendering hardening for cross-browser panel isolation
 - speaker-synced playback filtering feature refined into selected-speaker-sequence playback
+- collapsible sidebar (localStorage-persisted, smooth CSS transition, icon-only collapsed state)
 
 ## Execution principles
 

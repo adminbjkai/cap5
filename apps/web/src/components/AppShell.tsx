@@ -15,6 +15,7 @@ type AppShellProps = PropsWithChildren<{
 
 const THEME_KEY = 'cap5-theme';
 const LEGACY_THEME_KEY = 'cap-theme';
+const SIDEBAR_KEY = 'cap5-sidebar-collapsed';
 
 function loadStoredTheme(): 'light' | 'dark' | null {
   if (typeof window === 'undefined') return 'light';
@@ -56,6 +57,18 @@ export function AppShell({ children, overlays }: AppShellProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>(initialTheme);
   const [hasUserOverride, setHasUserOverride] = useState(Boolean(storedTheme));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(SIDEBAR_KEY) === 'true';
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      window.localStorage.setItem(SIDEBAR_KEY, String(next));
+      return next;
+    });
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -180,23 +193,43 @@ export function AppShell({ children, overlays }: AppShellProps) {
   return (
     <div className="app-shell flex font-sans">
       {/* Sidebar - Desktop */}
-      <aside className="sidebar p-4">
-        <div className="mb-8 flex items-center gap-2 px-2">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg font-bold text-xl text-white"
-            style={{
-              background: 'var(--accent-blue-gradient)',
-              boxShadow: '0 10px 24px rgba(107, 143, 113, 0.26)',
-            }}
-          >
-            C
+      <aside
+        className={`sidebar p-4 ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}
+      >
+        <div className={`mb-6 flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between px-2'}`}>
+          <div className="flex items-center gap-2">
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-bold text-xl text-white"
+              style={{
+                background: 'var(--accent-blue-gradient)',
+                boxShadow: '0 10px 24px rgba(107, 143, 113, 0.26)',
+              }}
+            >
+              C
+            </div>
+            {!isSidebarCollapsed && (
+              <span className="text-xl font-bold tracking-tight text-foreground">
+                Cap5
+              </span>
+            )}
           </div>
-          <span
-            className="text-xl font-bold tracking-tight text-foreground"
-            
+          {/* Collapse / Expand toggle — beside logo */}
+          <button
+            onClick={toggleSidebar}
+            className="sidebar-collapse-btn"
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            Cap5
-          </span>
+            <svg
+              className={`h-4 w-4 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1">
@@ -204,14 +237,16 @@ export function AppShell({ children, overlays }: AppShellProps) {
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? 'sidebar-link-active' : ''} ${isSidebarCollapsed ? 'sidebar-link-collapsed' : ''}`
+              }
+              title={isSidebarCollapsed ? item.label : undefined}
             >
-              {item.icon}
-              {item.label}
+              <span className="shrink-0">{item.icon}</span>
+              {!isSidebarCollapsed && item.label}
             </NavLink>
           ))}
         </nav>
-
       </aside>
 
       {/* Mobile Header */}
@@ -277,7 +312,9 @@ export function AppShell({ children, overlays }: AppShellProps) {
         </nav>
       </aside>
 
-      <main className="app-content min-h-screen pt-16 lg:pt-0">
+      <main
+        className={`app-content min-h-screen pt-16 lg:pt-0 ${isSidebarCollapsed ? 'app-content-collapsed' : ''}`}
+      >
         <div className="mx-auto w-full max-w-[1720px] px-4 py-8 sm:px-12">
           <div className="mb-4 hidden items-center justify-between lg:flex">
             <div className="text-xs text-muted">
