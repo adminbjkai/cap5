@@ -107,3 +107,4 @@ That starts:
 - [docs/review-auth-system.md](docs/review-auth-system.md) — dated auth-system code-review snapshot
 - [docs/review-2026-04-11.md](docs/review-2026-04-11.md) — dated full-repo review + changelog (most recent)
 - [docs/review-2026-04-10.md](docs/review-2026-04-10.md) — previous dated full-repo review + changelog
+- [docs/decks/](docs/decks/) — standalone HTML presentation decks with architecture infographics

@@ -11,6 +11,7 @@ import { HomePage } from "./pages/HomePage";
 import { RecordPage } from "./pages/RecordPage";
 import { VideoPage } from "./pages/VideoPage";
 import { LoginPage } from "./pages/LoginPage";
+import { DocsPage } from "./pages/DocsPage";
 import { Spinner } from "./components/ui/Spinner";
 
 function AppContent() {
@@ -133,6 +134,7 @@ function AppContent() {
         <Route path="/" element={<HomePage />} />
         <Route path="/record" element={<RecordPage />} />
         <Route path="/video/:videoId" element={<VideoPage />} />
+        <Route path="/docs" element={<DocsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

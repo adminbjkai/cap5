@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cap5 — Platform Overview &amp; Features</title>
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --border: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-cyan: #22d3ee;
+    --accent-orange: #f97316;
+    --accent-green: #22c55e;
+    --accent-purple: #a78bfa;
+    --accent-blue: #3b82f6;
+    --accent-pink: #f472b6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+  .slide {
+    min-height: 100vh;
+    padding: 60px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .slide::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-orange));
+  }
+  .slide-number {
+    position: absolute;
+    top: 24px;
+    right: 40px;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  h2 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 32px;
+    letter-spacing: -0.5px;
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .subtitle {
+    font-size: 22px;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+    max-width: 700px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .tag-cyan { background: rgba(34,211,238,0.15); color: var(--accent-cyan); }
+  .tag-orange { background: rgba(249,115,22,0.15); color: var(--accent-orange); }
+  .tag-green { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+  .tag-purple { background: rgba(167,139,250,0.15); color: var(--accent-purple); }
+  .tag-pink { background: rgba(244,114,182,0.15); color: var(--accent-pink); }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 16px;
+  }
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .feature-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-cyan);
+  }
+  .feature-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .icon-cyan { background: rgba(34,211,238,0.15); }
+  .icon-orange { background: rgba(249,115,22,0.15); }
+  .icon-green { background: rgba(34,197,94,0.15); }
+  .icon-purple { background: rgba(167,139,250,0.15); }
+  .icon-blue { background: rgba(59,130,246,0.15); }
+  .icon-pink { background: rgba(244,114,182,0.15); }
+  .feature-card h3 { font-size: 17px; margin-bottom: 8px; }
+  .feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    margin-top: 16px;
+  }
+  .list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .list-bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .list-item p { font-size: 15px; color: var(--text-secondary); }
+  .list-item strong { color: var(--text-primary); }
+  .infographic-container {
+    margin-top: 32px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .infographic-container img {
+    width: 100%;
+    display: block;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 48px;
+    margin-top: 40px;
+  }
+  .stat { text-align: center; }
+  .stat-value {
+    font-size: 40px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-step {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .flow-step .step-label { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .flow-step .step-desc { font-size: 12px; color: var(--text-secondary); }
+  .flow-arrow { font-size: 24px; color: var(--text-muted); }
+  .footer-bar {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<section class="slide">
+  <span class="slide-number">01 / 05</span>
+  <span class="tag tag-cyan">Platform Overview</span>
+  <h1>cap5</h1>
+  <p class="subtitle">A single-tenant video processing platform for uploading or recording video, normalizing it into MP4, generating transcripts with speaker diarization, and producing AI enrichments — all from one clean monorepo.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-value">4</div><div class="stat-label">Runtime Services</div></div>
+    <div class="stat"><div class="stat-value">3</div><div class="stat-label">Shared Packages</div></div>
+    <div class="stat"><div class="stat-value">5</div><div class="stat-label">Job Types</div></div>
+    <div class="stat"><div class="stat-value">2</div><div class="stat-label">AI Providers</div></div>
+    <div class="stat"><div class="stat-value">7</div><div class="stat-label">Data Tables</div></div>
+  </div>
+</section>
+
+<!-- SLIDE 2: Core Features -->
+<section class="slide">
+  <span class="slide-number">02 / 05</span>
+  <span class="tag tag-green">Features</span>
+  <h2>Core Features</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon icon-cyan">&#127909;</div>
+      <h3>Screen Recording</h3>
+      <p>Browser-based screen, tab, or window capture using MediaRecorder API. Optional microphone mixing via AudioContext. Records to WebM, auto-triggers upload.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-orange">&#9881;&#65039;</div>
+      <h3>Video Processing</h3>
+      <p>FFmpeg normalizes any input to H.264/AAC MP4 with faststart. Generates best-frame thumbnail. ffprobe extracts duration, dimensions, FPS, and audio presence.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-green">&#128172;</div>
+      <h3>AI Transcription</h3>
+      <p>Deepgram Nova-2 speech-to-text with speaker diarization, language detection, smart formatting, and punctuation. Stored as timed segments with WebVTT.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-purple">&#129504;</div>
+      <h3>AI Enrichment</h3>
+      <p>Groq Llama 3.3 70B generates title, summary, chapters (max 12), entities, action items, and quotes. Multi-chunk synthesis for long transcripts (&gt;24K chars).</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-blue">&#128218;</div>
+      <h3>Smart Library</h3>
+      <p>Search by title with instant client-side filtering. From/to date range pickers. Status filter (all, processing, complete, failed). Cursor-based pagination.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-pink">&#128274;</div>
+      <h3>Secure Auth</h3>
+      <p>Single-user email/password auth with bcrypt. Stateless JWT (HS256, 7-day lifetime). httpOnly Secure SameSite=Strict cookie. First-run setup flow.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 3: User Experience -->
+<section class="slide">
+  <span class="slide-number">03 / 05</span>
+  <span class="tag tag-purple">User Experience</span>
+  <h2>How It Works</h2>
+  <div class="flow-row">
+    <div class="flow-step" style="border-color: var(--accent-cyan);">
+      <div class="step-label" style="color: var(--accent-cyan);">Record / Upload</div>
+      <div class="step-desc">Screen capture or<br>file upload</div>
+    </div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step" style="border-color: var(--accent-orange);">
+      <div class="step-label" style="color: var(--accent-orange);">Process</div>
+      <div class="step-desc">Normalize MP4<br>+ thumbnail</div>
+    </div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step" style="border-color: var(--accent-green);">
+      <div class="step-label" style="color: var(--accent-green);">Transcribe</div>
+      <div class="step-desc">Deepgram AI<br>+ speaker labels</div>
+    </div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step" style="border-color: var(--accent-purple);">
+      <div class="step-label" style="color: var(--accent-purple);">Enrich</div>
+      <div class="step-desc">Groq LLM title,<br>summary, chapters</div>
+    </div>
+    <div class="flow-arrow">&#10132;</div>
+    <div class="flow-step" style="border-color: var(--accent-pink);">
+      <div class="step-label" style="color: var(--accent-pink);">Review</div>
+      <div class="step-desc">Watch, edit,<br>explore AI output</div>
+    </div>
+  </div>
+  <div class="two-col" style="margin-top: 48px;">
+    <div>
+      <h3 style="color: var(--accent-cyan);">Watch Page</h3>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-cyan);"></div><p><strong>Video player</strong> with custom controls and speaker-aware playback skipping</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-cyan);"></div><p><strong>Multi-tab sidebar</strong> — transcript, summary, chapters, notes, action items</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-cyan);"></div><p><strong>Inline editing</strong> — title, transcript text, speaker labels, operator notes</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-cyan);"></div><p><strong>Chapter timeline</strong> with click-to-seek navigation</p></div>
+    </div>
+    <div>
+      <h3 style="color: var(--accent-purple);">Navigation &amp; Shortcuts</h3>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-purple);"></div><p><strong>Cmd+K</strong> — command palette with fuzzy search across all library videos</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-purple);"></div><p><strong>Space / Arrows</strong> — play/pause and seek on the watch page</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-purple);"></div><p><strong>Collapsible sidebar</strong> — persisted to localStorage, responsive layout</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-purple);"></div><p><strong>Confirmation dialogs</strong> — for destructive actions like delete and retry</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4: Scope & Design Philosophy -->
+<section class="slide">
+  <span class="slide-number">04 / 05</span>
+  <span class="tag tag-orange">Scope &amp; Goals</span>
+  <h2>Design Philosophy</h2>
+  <div class="two-col">
+    <div>
+      <h3 style="color: var(--accent-green);">What cap5 Is</h3>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-green);"></div><p><strong>Single-tenant, single-user</strong> — one account owns everything, no multi-tenancy overhead</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-green);"></div><p><strong>PostgreSQL does everything</strong> — metadata, queue, transcripts, AI outputs, idempotency, webhook ledger</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-green);"></div><p><strong>Docker Compose deployment</strong> — one command to build and run the full stack</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-green);"></div><p><strong>Clean monorepo</strong> — pnpm workspaces with 4 apps and 3 shared packages</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-green);"></div><p><strong>Idempotent mutations</strong> — every mutation requires an Idempotency-Key header</p></div>
+    </div>
+    <div>
+      <h3 style="color: var(--accent-orange);">What cap5 Is Not</h3>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-orange);"></div><p><strong>No multi-tenancy</strong> — no user_id scoping, no org boundaries, no access control lists</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-orange);"></div><p><strong>No Redis / Kafka</strong> — PostgreSQL FOR UPDATE SKIP LOCKED replaces external brokers</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-orange);"></div><p><strong>No HLS streaming</strong> — schema has surface area but no active pipeline</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-orange);"></div><p><strong>No production platform manifests</strong> — Docker Compose only, no Kubernetes</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-orange);"></div><p><strong>No push updates</strong> — frontend polls for status, no WebSocket channel yet</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5: Infographic -->
+<section class="slide">
+  <span class="slide-number">05 / 05</span>
+  <span class="tag tag-pink">Visual Summary</span>
+  <h2>Platform at a Glance</h2>
+  <div class="infographic-container">
+    <img src="img-overview.png" alt="cap5 Platform Overview Infographic" onerror="this.parentElement.innerHTML='<div style=&quot;padding:80px;text-align:center;color:#64748b;&quot;>Infographic will appear here once generated</div>'">
+  </div>
+</section>
+
+<div class="footer-bar">cap5 — Single-Tenant Video Processing Platform &bull; v0.1.0</div>
+
+</body>
+</html>

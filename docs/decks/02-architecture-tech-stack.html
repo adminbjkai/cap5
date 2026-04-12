@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cap5 — Architecture &amp; Tech Stack</title>
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --border: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-cyan: #22d3ee;
+    --accent-orange: #f97316;
+    --accent-green: #22c55e;
+    --accent-purple: #a78bfa;
+    --accent-blue: #3b82f6;
+    --accent-pink: #f472b6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+  .slide {
+    min-height: 100vh;
+    padding: 60px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .slide::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-orange), var(--accent-cyan), var(--accent-green));
+  }
+  .slide-number {
+    position: absolute;
+    top: 24px; right: 40px;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  h2 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 32px;
+    letter-spacing: -0.5px;
+  }
+  h3 { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+  .tag {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .tag-cyan { background: rgba(34,211,238,0.15); color: var(--accent-cyan); }
+  .tag-orange { background: rgba(249,115,22,0.15); color: var(--accent-orange); }
+  .tag-green { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+  .tag-purple { background: rgba(167,139,250,0.15); color: var(--accent-purple); }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin-top: 16px;
+  }
+  .arch-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 28px;
+    text-align: center;
+    min-width: 160px;
+    position: relative;
+  }
+  .arch-box .box-name { font-size: 15px; font-weight: 700; }
+  .arch-box .box-detail { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .arch-arrow { font-size: 22px; color: var(--text-muted); }
+  .arch-arrow-down { text-align: center; font-size: 22px; color: var(--text-muted); }
+  .arch-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: -8px;
+    margin-bottom: -8px;
+  }
+
+  /* Tech grid */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .tech-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .tech-card h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .tech-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .tech-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Monorepo */
+  .mono-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .mono-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .mono-path {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    white-space: nowrap;
+    min-width: 160px;
+  }
+  .mono-desc { font-size: 13px; color: var(--text-secondary); }
+
+  .infographic-container {
+    margin-top: 32px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .infographic-container img { width: 100%; display: block; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 16px; }
+  .list-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+  .list-bullet { width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+  .list-item p { font-size: 14px; color: var(--text-secondary); }
+  .list-item strong { color: var(--text-primary); }
+
+  .footer-bar {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Runtime Architecture -->
+<section class="slide">
+  <span class="slide-number">01 / 05</span>
+  <span class="tag tag-cyan">Architecture</span>
+  <h2>Runtime Topology</h2>
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box" style="border-color: var(--accent-blue);">
+        <div class="box-name" style="color: var(--accent-blue);">User Browser</div>
+        <div class="box-detail">React + Vite SPA</div>
+      </div>
+    </div>
+    <div class="arch-arrow-down">&#8595;</div>
+    <div class="arch-label">HTTP / Static Assets</div>
+    <div class="arch-row">
+      <div class="arch-box" style="border-color: var(--accent-cyan);">
+        <div class="box-name" style="color: var(--accent-cyan);">nginx</div>
+        <div class="box-detail">web-internal — reverse proxy<br>Static files + API routing</div>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-arrow-down">&#8601; /api/*</div>
+      <div style="width: 120px;"></div>
+      <div class="arch-arrow-down">&#8600; /cap5/*</div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-box" style="border-color: var(--accent-green);">
+        <div class="box-name" style="color: var(--accent-green);">Fastify API</div>
+        <div class="box-detail">apps/web-api<br>REST endpoints, auth, webhooks</div>
+      </div>
+      <div style="width: 60px;"></div>
+      <div class="arch-box" style="border-color: var(--accent-orange);">
+        <div class="box-name" style="color: var(--accent-orange);">MinIO / S3</div>
+        <div class="box-detail">Object storage<br>Raw, MP4, thumbs, VTT</div>
+      </div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-arrow-down">&#8595;</div>
+      <div style="width: 200px;"></div>
+    </div>
+    <div class="arch-row">
+      <div class="arch-box" style="border-color: var(--accent-purple);">
+        <div class="box-name" style="color: var(--accent-purple);">PostgreSQL</div>
+        <div class="box-detail">Metadata, queue, transcripts<br>AI outputs, webhooks, idempotency</div>
+      </div>
+      <div style="width: 20px;"></div>
+      <div class="arch-box" style="border-color: var(--accent-pink);">
+        <div class="box-name" style="color: var(--accent-pink);">Worker</div>
+        <div class="box-detail">apps/worker<br>Job processor</div>
+      </div>
+      <div style="width: 20px;"></div>
+      <div class="arch-box" style="border-color: var(--accent-orange);">
+        <div class="box-name" style="color: var(--accent-orange);">Media Server</div>
+        <div class="box-detail">apps/media-server<br>FFmpeg + ffprobe</div>
+      </div>
+    </div>
+    <div class="arch-row" style="margin-top: 8px;">
+      <div style="width: 190px;"></div>
+      <div class="arch-arrow">&#8594;</div>
+      <div class="arch-box" style="border-color: #6ee7b7; min-width: 120px;">
+        <div class="box-name" style="color: #6ee7b7; font-size: 13px;">Deepgram</div>
+        <div class="box-detail">Speech-to-text</div>
+      </div>
+      <div class="arch-box" style="border-color: #fbbf24; min-width: 120px;">
+        <div class="box-name" style="color: #fbbf24; font-size: 13px;">Groq</div>
+        <div class="box-detail">LLM enrichment</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 2: Tech Stack -->
+<section class="slide">
+  <span class="slide-number">02 / 05</span>
+  <span class="tag tag-orange">Tech Stack</span>
+  <h2>Technology Stack</h2>
+  <div class="tech-grid">
+    <div class="tech-card">
+      <h3 style="color: var(--accent-cyan);">Frontend</h3>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-cyan);"></div>React 18</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-cyan);"></div>Vite 5</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-cyan);"></div>Tailwind CSS 3</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-cyan);"></div>Zustand 5</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-cyan);"></div>React Router 6</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-cyan);"></div>TypeScript</div>
+    </div>
+    <div class="tech-card">
+      <h3 style="color: var(--accent-green);">Backend</h3>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-green);"></div>Fastify</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-green);"></div>Node.js 20</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-green);"></div>TypeScript</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-green);"></div>Zod validation</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-green);"></div>Pino logging</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-green);"></div>JWT / bcrypt</div>
+    </div>
+    <div class="tech-card">
+      <h3 style="color: var(--accent-orange);">Media &amp; AI</h3>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-orange);"></div>FFmpeg</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-orange);"></div>ffprobe</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-orange);"></div>Deepgram Nova-2</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-orange);"></div>Groq Llama 3.3 70B</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-orange);"></div>WebVTT</div>
+    </div>
+    <div class="tech-card">
+      <h3 style="color: var(--accent-purple);">Infrastructure</h3>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-purple);"></div>PostgreSQL</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-purple);"></div>MinIO (S3)</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-purple);"></div>Docker Compose</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-purple);"></div>nginx</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-purple);"></div>Alpine Linux</div>
+      <div class="tech-item"><div class="tech-dot" style="background: var(--accent-purple);"></div>pnpm workspaces</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 3: Monorepo -->
+<section class="slide">
+  <span class="slide-number">03 / 05</span>
+  <span class="tag tag-green">Structure</span>
+  <h2>Monorepo Layout</h2>
+  <div class="mono-grid">
+    <div class="mono-card">
+      <div class="mono-path">apps/web</div>
+      <div class="mono-desc">React/Vite frontend — library, recording, watch page, transcript editing, AI enrichment review</div>
+    </div>
+    <div class="mono-card">
+      <div class="mono-path">apps/web-api</div>
+      <div class="mono-desc">Fastify REST API — videos, uploads, library, auth, provider status, inbound/outbound webhooks</div>
+    </div>
+    <div class="mono-card">
+      <div class="mono-path">apps/worker</div>
+      <div class="mono-desc">Background job processor — claims from PostgreSQL queue, runs process/transcribe/AI/cleanup/webhook jobs</div>
+    </div>
+    <div class="mono-card">
+      <div class="mono-path">apps/media-server</div>
+      <div class="mono-desc">FFmpeg/ffprobe wrapper service — downloads raw, transcodes, generates thumbnail, uploads artifacts</div>
+    </div>
+    <div class="mono-card">
+      <div class="mono-path">packages/config</div>
+      <div class="mono-desc">Zod-validated environment schema — canonical env contract, fails fast with clear error messages</div>
+    </div>
+    <div class="mono-card">
+      <div class="mono-path">packages/db</div>
+      <div class="mono-desc">PostgreSQL pool + migrations — singleton per DATABASE_URL, max 20 connections, 30s idle timeout</div>
+    </div>
+    <div class="mono-card">
+      <div class="mono-path">packages/logger</div>
+      <div class="mono-desc">Pino structured logging — redacts secrets, context propagation via child loggers, pretty-print mode</div>
+    </div>
+    <div class="mono-card">
+      <div class="mono-path">db/migrations</div>
+      <div class="mono-desc">Schema source of truth — all table definitions and indexes versioned as sequential migration files</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4: Architecture Decisions -->
+<section class="slide">
+  <span class="slide-number">04 / 05</span>
+  <span class="tag tag-purple">ADRs</span>
+  <h2>Architecture Decisions</h2>
+  <div class="two-col">
+    <div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-cyan);"></div><p><strong>ADR-001: PostgreSQL is the queue</strong> — FOR UPDATE SKIP LOCKED plus leases, heartbeats, reclaim, and dead-lettering. No external broker needed.</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-green);"></div><p><strong>ADR-002: Synchronous media orchestration</strong> — Worker calls media-server directly via POST /process. Simple pipeline, easy to reason about.</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-orange);"></div><p><strong>ADR-003: Shared HMAC shape</strong> — Inbound and outbound webhooks use the same timestamped HMAC format with delivery IDs.</p></div>
+    </div>
+    <div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-purple);"></div><p><strong>ADR-004: Single-user JWT auth</strong> — Email/password with bcrypt, stateless HS256 JWT, httpOnly cookie transport. No multi-tenant overhead.</p></div>
+      <div class="list-item"><div class="list-bullet" style="background: var(--accent-pink);"></div><p><strong>ADR-005: Runtime naming is cap5</strong> — S3 bucket defaults to cap5, object routing uses /cap5/..., webhook media type uses application/cap5-webhook+json.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5: Infographic -->
+<section class="slide">
+  <span class="slide-number">05 / 05</span>
+  <span class="tag tag-cyan">Visual Summary</span>
+  <h2>Architecture at a Glance</h2>
+  <div class="infographic-container">
+    <img src="img-architecture.png" alt="cap5 Architecture Infographic" onerror="this.parentElement.innerHTML='<div style=&quot;padding:80px;text-align:center;color:#64748b;&quot;>Infographic will appear here once generated</div>'">
+  </div>
+</section>
+
+<div class="footer-bar">cap5 — Architecture &amp; Tech Stack &bull; v0.1.0</div>
+
+</body>
+</html>

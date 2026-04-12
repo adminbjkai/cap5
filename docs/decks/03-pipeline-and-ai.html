@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cap5 — Processing Pipeline &amp; AI</title>
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --border: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-cyan: #22d3ee;
+    --accent-orange: #f97316;
+    --accent-green: #22c55e;
+    --accent-purple: #a78bfa;
+    --accent-blue: #3b82f6;
+    --accent-pink: #f472b6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+  .slide {
+    min-height: 100vh;
+    padding: 60px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .slide::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-purple), var(--accent-pink));
+  }
+  .slide-number { position: absolute; top: 24px; right: 40px; font-size: 13px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+  h2 { font-size: 36px; font-weight: 700; margin-bottom: 32px; letter-spacing: -0.5px; }
+  h3 { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+  .tag { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+  .tag-cyan { background: rgba(34,211,238,0.15); color: var(--accent-cyan); }
+  .tag-orange { background: rgba(249,115,22,0.15); color: var(--accent-orange); }
+  .tag-green { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+  .tag-purple { background: rgba(167,139,250,0.15); color: var(--accent-purple); }
+  .tag-pink { background: rgba(244,114,182,0.15); color: var(--accent-pink); }
+
+  /* Pipeline steps */
+  .pipeline {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .pipeline-step {
+    flex: 1;
+    min-width: 180px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+  }
+  .pipeline-step .step-num {
+    font-size: 32px;
+    font-weight: 800;
+    opacity: 0.15;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+  }
+  .pipeline-step .step-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .pipeline-step .step-detail { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    font-size: 24px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* Detail cards */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+  }
+  .detail-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+  }
+  .detail-card h3 { margin-bottom: 16px; }
+  .detail-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .detail-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+  .detail-item p { font-size: 14px; color: var(--text-secondary); }
+  .detail-item strong { color: var(--text-primary); }
+
+  .code-block {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+  }
+  .code-comment { color: #8b949e; }
+  .code-key { color: #ff7b72; }
+  .code-val { color: #a5d6ff; }
+  .code-str { color: #79c0ff; }
+
+  /* Upload comparison */
+  .upload-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+  }
+  .upload-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+  }
+  .upload-card h3 { margin-bottom: 16px; }
+  .upload-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .upload-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .upload-step p { font-size: 13px; color: var(--text-secondary); }
+
+  /* AI outputs table */
+  .ai-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+  .ai-table th {
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ai-table td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(30,41,59,0.5);
+    vertical-align: top;
+  }
+  .ai-table td:first-child { color: var(--text-primary); font-weight: 600; }
+
+  .infographic-container { margin-top: 32px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  .infographic-container img { width: 100%; display: block; }
+  .footer-bar { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Pipeline Overview -->
+<section class="slide">
+  <span class="slide-number">01 / 05</span>
+  <span class="tag tag-green">Pipeline</span>
+  <h2>End-to-End Processing Pipeline</h2>
+  <div class="pipeline">
+    <div class="pipeline-step" style="border-top: 3px solid var(--accent-cyan);">
+      <div class="step-num">1</div>
+      <div class="step-title" style="color: var(--accent-cyan);">Upload</div>
+      <div class="step-detail">Browser records screen or user uploads file. Single-part (&le;100MB) or multipart (&gt;100MB, 10MB chunks) signed S3 upload. Queues <strong>process_video</strong>.</div>
+    </div>
+    <div class="pipeline-arrow">&#10132;</div>
+    <div class="pipeline-step" style="border-top: 3px solid var(--accent-orange);">
+      <div class="step-num">2</div>
+      <div class="step-title" style="color: var(--accent-orange);">Process</div>
+      <div class="step-detail">Worker claims job. Media-server downloads raw from S3. FFmpeg transcodes to H.264/AAC MP4. Generates thumbnail. ffprobe extracts metadata. Uploads artifacts.</div>
+    </div>
+    <div class="pipeline-arrow">&#10132;</div>
+    <div class="pipeline-step" style="border-top: 3px solid var(--accent-green);">
+      <div class="step-num">3</div>
+      <div class="step-title" style="color: var(--accent-green);">Transcribe</div>
+      <div class="step-detail">Worker sends audio to Deepgram Nova-2. Returns segments with speaker diarization, timestamps, confidence. Stores transcript + WebVTT. Queues <strong>generate_ai</strong>.</div>
+    </div>
+    <div class="pipeline-arrow">&#10132;</div>
+    <div class="pipeline-step" style="border-top: 3px solid var(--accent-purple);">
+      <div class="step-num">4</div>
+      <div class="step-title" style="color: var(--accent-purple);">Enrich</div>
+      <div class="step-detail">Worker sends transcript to Groq Llama 3.3 70B. Generates title, summary, chapters, entities, action items, quotes. Multi-chunk synthesis for long transcripts.</div>
+    </div>
+    <div class="pipeline-arrow">&#10132;</div>
+    <div class="pipeline-step" style="border-top: 3px solid var(--accent-pink);">
+      <div class="step-num">5</div>
+      <div class="step-title" style="color: var(--accent-pink);">Deliver</div>
+      <div class="step-detail">Frontend polls GET /api/videos/:id/status. Renders video player, transcript, AI enrichments. Outbound webhooks fire at each milestone.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 2: Media Processing Detail -->
+<section class="slide">
+  <span class="slide-number">02 / 05</span>
+  <span class="tag tag-orange">Media Processing</span>
+  <h2>FFmpeg &amp; Media Server</h2>
+  <div class="detail-grid">
+    <div class="detail-card">
+      <h3 style="color: var(--accent-orange);">Processing Steps</h3>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-orange);"></div><p><strong>Validate</strong> — confirm videoId is UUID format</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-orange);"></div><p><strong>Download</strong> — stream raw upload from S3 to /tmp/cap5-media/&lt;videoId&gt;/</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-orange);"></div><p><strong>Transcode</strong> — FFmpeg: H.264 veryfast, yuv420p, faststart, AAC 128k</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-orange);"></div><p><strong>Thumbnail</strong> — FFmpeg thumbnail filter, single best frame</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-orange);"></div><p><strong>Probe</strong> — ffprobe extracts duration, dimensions, FPS, audio presence</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-orange);"></div><p><strong>Upload</strong> — result MP4 + thumbnail to S3, cleanup temp files</p></div>
+    </div>
+    <div class="detail-card">
+      <h3 style="color: var(--accent-cyan);">FFmpeg Commands</h3>
+      <div class="code-block"><span class="code-comment"># Normalize to MP4</span>
+ffmpeg -y -i &lt;input&gt; \
+  -map 0:v:0 -map 0:a:0? \
+  -c:v libx264 -preset veryfast \
+  -pix_fmt yuv420p -movflags +faststart \
+  -c:a aac -b:a 128k \
+  &lt;output.mp4&gt;
+
+<span class="code-comment"># Generate thumbnail</span>
+ffmpeg -y -i &lt;result.mp4&gt; \
+  -vf thumbnail -frames:v 1 \
+  &lt;thumb.jpg&gt;
+
+<span class="code-comment"># Probe metadata</span>
+ffprobe -v error -print_format json \
+  -show_streams -show_format &lt;file&gt;</div>
+    </div>
+  </div>
+  <div style="margin-top: 24px;">
+    <h3 style="color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">S3 Key Patterns</h3>
+    <div class="code-block"><span class="code-key">result</span>:     videos/&lt;videoId&gt;/result/result.mp4
+<span class="code-key">thumbnail</span>:  videos/&lt;videoId&gt;/thumb/screen-capture.jpg
+<span class="code-key">vtt</span>:        videos/&lt;videoId&gt;/transcript/transcript.vtt
+<span class="code-key">raw</span>:        uploads/&lt;videoId&gt;/&lt;original-filename&gt;</div>
+  </div>
+</section>
+
+<!-- SLIDE 3: AI Providers -->
+<section class="slide">
+  <span class="slide-number">03 / 05</span>
+  <span class="tag tag-purple">AI Providers</span>
+  <h2>Deepgram &amp; Groq Integration</h2>
+  <div class="detail-grid">
+    <div class="detail-card">
+      <h3 style="color: var(--accent-green);">Deepgram — Transcription</h3>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-green);"></div><p><strong>Model:</strong> Nova-2 (configurable via DEEPGRAM_MODEL)</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-green);"></div><p><strong>Features:</strong> smart_format, punctuate, utterances, diarize, detect_language</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-green);"></div><p><strong>Output:</strong> segments with { startSeconds, endSeconds, text, confidence, speaker }</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-green);"></div><p><strong>Storage:</strong> segments_json + speaker_labels_json in transcripts table, VTT file in S3</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-green);"></div><p><strong>Fallback:</strong> extracts audio via FFmpeg first; falls back to full video if needed</p></div>
+    </div>
+    <div class="detail-card">
+      <h3 style="color: var(--accent-purple);">Groq — AI Enrichment</h3>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-purple);"></div><p><strong>Model:</strong> Llama 3.3 70B Versatile (configurable via GROQ_MODEL)</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-purple);"></div><p><strong>Temperature:</strong> 0.3 — factual, low-creativity extraction</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-purple);"></div><p><strong>Response format:</strong> JSON object (structured output)</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-purple);"></div><p><strong>Multi-chunk:</strong> transcripts &gt;24K chars split by paragraph boundaries</p></div>
+      <div class="detail-item"><div class="detail-dot" style="background: var(--accent-purple);"></div><p><strong>Synthesis:</strong> chunks processed individually, then combined via additional call</p></div>
+    </div>
+  </div>
+  <h3 style="margin-top: 32px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">AI Output Fields</h3>
+  <table class="ai-table">
+    <thead><tr><th>Field</th><th>Description</th><th>Constraints</th></tr></thead>
+    <tbody>
+      <tr><td>title</td><td>Auto-generated descriptive title from transcript content</td><td>Single string</td></tr>
+      <tr><td>summary</td><td>Concise overview of the video content</td><td>Single string</td></tr>
+      <tr><td>key_points</td><td>Main takeaways from the discussion</td><td>Array of strings</td></tr>
+      <tr><td>chapters</td><td>Timestamped topic segments with titles</td><td>Max 12, deduped within 30s intervals</td></tr>
+      <tr><td>entities</td><td>Named people, orgs, tools, concepts mentioned</td><td>Set-deduplicated across chunks</td></tr>
+      <tr><td>action_items</td><td>Tasks, assignments, or follow-ups identified</td><td>Array with assignee/deadline fields</td></tr>
+      <tr><td>quotes</td><td>Notable verbatim quotes from speakers</td><td>Max 5 per video</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SLIDE 4: Upload Strategies -->
+<section class="slide">
+  <span class="slide-number">04 / 05</span>
+  <span class="tag tag-cyan">Upload</span>
+  <h2>Upload Strategies</h2>
+  <div class="upload-compare">
+    <div class="upload-card" style="border-top: 3px solid var(--accent-cyan);">
+      <h3 style="color: var(--accent-cyan);">Single-Part (&le; 100 MB)</h3>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(34,211,238,0.15); color: var(--accent-cyan);">1</div><p>POST /api/videos — create video + uploads row</p></div>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(34,211,238,0.15); color: var(--accent-cyan);">2</div><p>POST /api/uploads/signed — get presigned PUT URL</p></div>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(34,211,238,0.15); color: var(--accent-cyan);">3</div><p>PUT to signed URL — XHR upload with progress</p></div>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(34,211,238,0.15); color: var(--accent-cyan);">4</div><p>POST /api/uploads/complete — queues process_video</p></div>
+    </div>
+    <div class="upload-card" style="border-top: 3px solid var(--accent-orange);">
+      <h3 style="color: var(--accent-orange);">Multipart (&gt; 100 MB)</h3>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(249,115,22,0.15); color: var(--accent-orange);">1</div><p>POST /api/uploads/multipart/initiate — start session</p></div>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(249,115,22,0.15); color: var(--accent-orange);">2</div><p>POST /api/uploads/multipart/presign-part — per 10MB chunk</p></div>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(249,115,22,0.15); color: var(--accent-orange);">3</div><p>PUT each chunk — sequential upload with ETag tracking</p></div>
+      <div class="upload-step"><div class="upload-num" style="background: rgba(249,115,22,0.15); color: var(--accent-orange);">4</div><p>POST /api/uploads/multipart/complete — ETags array, queues job</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5: Infographic -->
+<section class="slide">
+  <span class="slide-number">05 / 05</span>
+  <span class="tag tag-pink">Visual Summary</span>
+  <h2>Pipeline at a Glance</h2>
+  <div class="infographic-container">
+    <img src="img-pipeline.png" alt="cap5 Pipeline Infographic" onerror="this.parentElement.innerHTML='<div style=&quot;padding:80px;text-align:center;color:#64748b;&quot;>Infographic will appear here once generated</div>'">
+  </div>
+</section>
+
+<div class="footer-bar">cap5 — Processing Pipeline &amp; AI &bull; v0.1.0</div>
+
+</body>
+</html>

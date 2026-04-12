@@ -22,6 +22,7 @@ What works:
 - library search by video title (instant client-side filtering)
 - library date range filter with from/to date pickers
 - video creation time displayed on library cards and watch page header
+- in-app documentation page (/docs) with architecture, tech stack, pipeline, and system internals
 
 What is still rough:
 

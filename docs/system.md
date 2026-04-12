@@ -424,6 +424,7 @@ ffprobe -v error -print_format json -show_streams -show_format <file>
 
 - `HomePage` — video library grid with sorting (date/name/duration), status filtering (all/processing/complete/failed), title search (instant client-side), from/to date range filter, cursor-based pagination (limit 20), delete confirmation, provider status panel. Library cards show creation date + time.
 - `RecordPage` — 3-step recording wizard: setup (mic/camera selection) → preview → upload. Uses MediaRecorder API for screen/tab/window capture with microphone mixing. Supports file upload fallback. Auto-triggers upload for screen recordings.
+- `DocsPage` — in-app documentation page with tabbed sections covering platform overview, architecture & tech stack, processing pipeline & AI, and system internals. Includes pipeline flow visualization and key stats.
 - `VideoPage` — video player with multi-tab sidebar (transcript, summary, chapters, notes, action items). Inline title editing. Transcript text, speaker label, and server-backed operator note editing. Speaker filters now sync to playback so deselected speakers are hidden in the transcript and playback follows the next allowed selected-speaker segment in chronological order. Playback enforcement uses merged allowed ranges plus active playback guards so the player tracks the visible selected-speaker sequence instead of merely dodging blocked spans. Polls status every 2s with exponential backoff (up to 15s). Stops polling at terminal states. Retry/delete with confirmation dialogs.
 
 ### Recording flow

@@ -44,6 +44,8 @@ Completed in the actual repo during this pass:
 - library title search with instant client-side filtering
 - library from/to date range picker filter
 - video creation timestamp on library cards and watch page header
+- in-app documentation page (/docs) with tabbed architecture, tech stack, pipeline, and internals sections
+- docs/decks/ directory with standalone HTML presentation decks and Vertex AI infographics
 
 ## Execution principles
 
