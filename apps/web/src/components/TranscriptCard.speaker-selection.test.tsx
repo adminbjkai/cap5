@@ -80,4 +80,24 @@ describe("TranscriptCard speaker selection", () => {
     expect(screen.getByText("No speakers selected.")).toBeTruthy();
     expect(screen.queryByText("Guest reply.")).toBeNull();
   });
+
+  it("exposes aria-pressed state on each speaker-filter chip and flips it on toggle", () => {
+    const view = renderTranscriptCard();
+
+    const chips = view.container.querySelectorAll<HTMLButtonElement>("button.speaker-filter-chip");
+    expect(chips.length).toBe(2);
+    // Both chips start selected (aria-pressed=true).
+    chips.forEach((chip) => {
+      expect(chip.getAttribute("aria-pressed")).toBe("true");
+    });
+
+    fireEvent.click(chips[0]!);
+
+    // After toggling Host off, the first chip flips to aria-pressed=false; the
+    // second chip stays pressed. aria-label also flips to match.
+    expect(chips[0]!.getAttribute("aria-pressed")).toBe("false");
+    expect(chips[0]!.getAttribute("aria-label")).toBe("Show Host");
+    expect(chips[1]!.getAttribute("aria-pressed")).toBe("true");
+    expect(chips[1]!.getAttribute("aria-label")).toBe("Hide Guest");
+  });
 });
